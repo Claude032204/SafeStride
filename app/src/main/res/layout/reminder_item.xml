@@ -1,0 +1,42 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="20dp"
+    android:background="@drawable/card_bg"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Reminder Title -->
+    <TextView
+        android:id="@+id/reminderTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Title"
+        android:textSize="18sp"/>
+
+    <!-- Reminder Date -->
+    <TextView
+        android:id="@+id/reminderDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Date"
+        android:textSize="14sp"/>
+
+    <!-- Reminder Time -->
+    <TextView
+        android:id="@+id/reminderTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Time"
+        android:textSize="14sp"/>
+
+    <!-- Done Button, initially invisible -->
+    <Button
+        android:id="@+id/doneButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Done"
+        android:visibility="gone"/>
+</LinearLayout>

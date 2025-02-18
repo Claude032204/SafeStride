@@ -1,0 +1,561 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/patient"
+    android:background="#000B7E"
+    >
+
+    <!-- Header with the Back Arrow -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:orientation="horizontal"
+        android:padding="7dp"
+        android:visibility="visible">
+
+        <!-- Back Arrow Icon -->
+        <ImageView
+            android:id="@+id/backArrowIcon"
+            android:layout_width="25dp"
+            android:layout_height="30dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="8dp"
+            android:contentDescription="@string/back_arrow"
+            android:src="@drawable/backkk"
+            android:scaleType="fitCenter"
+            android:adjustViewBounds="true" />
+
+    </LinearLayout>
+
+    <!-- "Profile" Text -->
+    <TextView
+        android:id="@+id/profileText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Patient's Profile"
+        android:textColor="@android:color/white"
+        android:textSize="25sp"
+        android:textStyle="bold"
+        android:layout_marginTop="20dp"
+        android:layout_centerHorizontal="true" />
+
+    <!-- Profile Icon (ShapeableImageView) -->
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/profileIcon"
+        android:layout_width="110dp"
+        android:layout_height="110dp"
+        android:layout_marginTop="70dp"
+        android:layout_centerHorizontal="true"
+        android:src="@drawable/profileee"
+        android:contentDescription="@string/profile_icon" />
+
+    <!-- Text to Add Profile -->
+    <TextView
+        android:id="@+id/fullName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Full Name"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:layout_below="@id/profileIcon"
+        android:layout_marginTop="10dp"
+        android:layout_centerHorizontal="true" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@id/fullName"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="30dp"
+        android:layout_marginStart="30dp"
+        android:background="@android:color/white" />
+
+
+
+    <!-- ScrollView for Forms -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/profileText"
+        android:layout_marginTop="170dp"
+        android:layout_marginBottom="1dp"
+        android:padding="30dp">
+
+        <!-- LinearLayout for holding all cards -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Card 1: Personal Information -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                app:cardElevation="8dp"
+                app:cardCornerRadius="10dp"
+                android:backgroundTint="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Full Name -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <EditText
+                            android:id="@+id/fullNameEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Full Name"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp"
+                            android:layout_marginBottom="10dp"
+                            android:padding="10dp"
+                            android:textColorHint="#3A3838"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true" />
+
+                        <ImageView
+                            android:id="@+id/clearFullName"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/close"
+                            android:contentDescription="@string/clear_icon"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:clickable="true" />
+
+                    </RelativeLayout>
+
+                    <!-- Date of Birth -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <EditText
+                            android:id="@+id/dobEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Date of Birth"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp"
+                            android:padding="10dp"
+                            android:layout_marginBottom="10dp"
+                            android:textColorHint="#3A3838"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true" />
+
+                        <!-- Clear Button (X) inside the form -->
+                        <ImageView
+                            android:id="@+id/clearDob"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/close"
+                            android:contentDescription="@string/clear_icon"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:clickable="true" />
+                    </RelativeLayout>
+
+                    <!-- Gender -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <EditText
+                            android:id="@+id/genderEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Gender"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp"
+                            android:padding="10dp"
+                            android:layout_marginBottom="10dp"
+                            android:textColorHint="#3A3838"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true" />
+
+                        <!-- Clear Button (X) inside the form -->
+                        <ImageView
+                            android:id="@+id/clearGender"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/close"
+                            android:contentDescription="@string/clear_icon"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:clickable="true" />
+                    </RelativeLayout>
+
+                    <!-- Blood Type -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <EditText
+                            android:id="@+id/bloodTypeEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Blood Type"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp"
+                            android:padding="10dp"
+                            android:layout_marginBottom="10dp"
+                            android:textColorHint="#3A3838"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true" />
+
+                        <!-- Clear Button (X) inside the form -->
+                        <ImageView
+                            android:id="@+id/clearBloodType"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/close"
+                            android:contentDescription="@string/clear_icon"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:clickable="true" />
+                    </RelativeLayout>
+
+                    <!-- Emergency Contact -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <EditText
+                            android:id="@+id/emergencyContactEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Emergency Contact"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp"
+                            android:padding="10dp"
+                            android:layout_marginBottom="10dp"
+                            android:textColorHint="#3A3838"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true" />
+
+                        <!-- Clear Button (X) inside the form -->
+                        <ImageView
+                            android:id="@+id/clearEmergencyContact"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/close"
+                            android:contentDescription="@string/clear_icon"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:clickable="true" />
+                    </RelativeLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+
+            <!-- Card 2: Medical Information -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                app:cardElevation="8dp"
+                app:cardCornerRadius="10dp"
+                android:backgroundTint="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Primary Condition -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <EditText
+                            android:id="@+id/primaryConditionEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Primary Condition"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp"
+                            android:padding="10dp"
+                            android:layout_marginBottom="10dp"
+                            android:textColorHint="#3A3838"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true" />
+
+                        <!-- Clear Button (X) inside the form -->
+                        <ImageView
+                            android:id="@+id/clearPrimaryCondition"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/close"
+                            android:contentDescription="@string/clear_icon"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:clickable="true" />
+                    </RelativeLayout>
+
+                    <!-- Allergies -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <EditText
+                            android:id="@+id/allergiesEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Allergies (Food/Medication)"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp"
+                            android:padding="10dp"
+                            android:layout_marginBottom="10dp"
+                            android:textColorHint="#3A3838"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true" />
+
+                        <!-- Clear Button (X) inside the form -->
+                        <ImageView
+                            android:id="@+id/clearAllergies"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/close"
+                            android:contentDescription="@string/clear_icon"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:clickable="true" />
+                    </RelativeLayout>
+
+                    <!-- Current Medications -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <EditText
+                            android:id="@+id/medicationsEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Current Medications"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp"
+                            android:padding="10dp"
+                            android:layout_marginBottom="10dp"
+                            android:textColorHint="#3A3838"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true" />
+
+                        <!-- Clear Button (X) inside the form -->
+                        <ImageView
+                            android:id="@+id/clearMedications"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/close"
+                            android:contentDescription="@string/clear_icon"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:clickable="true" />
+                    </RelativeLayout>
+
+                    <!-- Mobility Status -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <EditText
+                            android:id="@+id/mobilityStatusEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Mobility Status"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp"
+                            android:padding="10dp"
+                            android:layout_marginBottom="10dp"
+                            android:textColorHint="#3A3838"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true" />
+
+                        <!-- Clear Button (X) inside the form -->
+                        <ImageView
+                            android:id="@+id/clearMobilityStatus"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/close"
+                            android:contentDescription="@string/clear_icon"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:clickable="true" />
+                    </RelativeLayout>
+
+                    <!-- Communication Needs -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <EditText
+                            android:id="@+id/communicationNeedsEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Communication Needs"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp"
+                            android:padding="10dp"
+                            android:layout_marginBottom="10dp"
+                            android:textColorHint="#3A3838"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true" />
+
+                        <!-- Clear Button (X) inside the form -->
+                        <ImageView
+                            android:id="@+id/clearCommunicationNeeds"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/close"
+                            android:contentDescription="@string/clear_icon"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:clickable="true" />
+                    </RelativeLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+
+            <!-- Card 3: Emergency Details -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                app:cardElevation="8dp"
+                app:cardCornerRadius="10dp"
+                android:backgroundTint="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Preferred Hospital -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <EditText
+                            android:id="@+id/hospitalEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Preferred Hospital"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp"
+                            android:padding="10dp"
+                            android:layout_marginBottom="10dp"
+                            android:textColorHint="#3A3838"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true" />
+
+                        <!-- Clear Button (X) inside the form -->
+                        <ImageView
+                            android:id="@+id/clearHospital"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/close"
+                            android:contentDescription="@string/clear_icon"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:clickable="true" />
+                    </RelativeLayout>
+
+                    <!-- Medical Alert -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <EditText
+                            android:id="@+id/medicalAlertEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Medical Alert or Special Instructions"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp"
+                            android:padding="10dp"
+                            android:layout_marginBottom="10dp"
+                            android:textColorHint="#3A3838"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true" />
+
+                        <!-- Clear Button (X) inside the form -->
+                        <ImageView
+                            android:id="@+id/clearMedicalAlert"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/close"
+                            android:contentDescription="@string/clear_icon"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:clickable="true" />
+                    </RelativeLayout>
+
+                    <!-- Guardian's Contact -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <EditText
+                            android:id="@+id/guardianContactEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Guardian’s Name or Contact Number"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp"
+                            android:padding="10dp"
+                            android:layout_marginBottom="10dp"
+                            android:textColorHint="#3A3838"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true" />
+
+                        <!-- Clear Button (X) inside the form -->
+                        <ImageView
+                            android:id="@+id/clearGuardianContact"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/close"
+                            android:contentDescription="@string/clear_icon"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:clickable="true" />
+                    </RelativeLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+
+            <!-- Button section: Submit and Edit -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="10dp">
+
+                <!-- Submit Button -->
+                <Button
+                    android:id="@+id/submitButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Submit"
+                    android:backgroundTint="@color/black"
+                    android:textColor="@android:color/white"
+                    android:padding="12dp"
+                    android:layout_marginEnd="20dp"/>
+
+                <!-- Edit Button -->
+                <Button
+                    android:id="@+id/editButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Edit"
+                    android:backgroundTint="@color/black"
+                    android:textColor="@android:color/white"
+                    android:padding="12dp"
+                    android:layout_marginStart="20dp"/>
+
+            </LinearLayout>
+
+
+        </LinearLayout>
+
+    </ScrollView>
+
+
+</RelativeLayout>

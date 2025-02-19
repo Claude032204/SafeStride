@@ -29,7 +29,7 @@ class Notification : AppCompatActivity() {
         }
 
 
-    // Sample notification data
+        // Sample notification data
         val notifications = listOf(
             Notif(
                 "Emergency Alert!",

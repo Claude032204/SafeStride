@@ -19,6 +19,7 @@ dependencyResolutionManagement {
     }
 
 
-        rootProject.name = "SafeStride"
+
+    rootProject.name = "SafeStride"
         include(":app")
     }

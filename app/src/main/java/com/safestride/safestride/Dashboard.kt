@@ -8,6 +8,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -25,6 +26,7 @@ class Dashboard : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContentView(R.layout.activity_dashboard)
 
         sharedPreferences = getSharedPreferences("AppPrefs", MODE_PRIVATE)
@@ -32,15 +34,29 @@ class Dashboard : AppCompatActivity() {
         // Initialize DrawerLayout
         drawerLayout = findViewById(R.id.drawerLayout)
 
-        findViewById<LinearLayout>(R.id.main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+        // Apply WindowInsets to the DrawerLayout for full-screen integration with the system bars
+        ViewCompat.setOnApplyWindowInsetsListener(drawerLayout) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+
+            // Apply padding to the DrawerLayout to avoid content being pushed under the system bars
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
 
+        // Now apply WindowInsets to the main LinearLayout that holds your content
+        val mainLayout = findViewById<LinearLayout>(R.id.main)
+        ViewCompat.setOnApplyWindowInsetsListener(mainLayout) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            // Apply padding to the main content area as well
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
 
-        // Handle Menu Icon Click
+        // Other initialization code for your activity
+
+
+
+    // Handle Menu Icon Click
         val menuIcon: ImageView = findViewById(R.id.menuIcon)
         menuIcon.setOnClickListener {
             drawerLayout.openDrawer(GravityCompat.START)

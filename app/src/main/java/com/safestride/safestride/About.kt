@@ -12,22 +12,31 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class About : AppCompatActivity() {
 
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var navigationView: NavigationView
     private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var db: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_about)
 
+        // Initialize Firestore and SharedPreferences
+        db = FirebaseFirestore.getInstance()
+        sharedPreferences = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+
         // Initialize DrawerLayout and NavigationView
         drawerLayout = findViewById(R.id.drawerLayout)
         navigationView = findViewById(R.id.navigationView)
-        sharedPreferences = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+
+        // Fetch and display the username in the navigation drawer
+        fetchUsernameFromFirestore()
 
         // Handle the Menu Icon click to open the drawer
         val menuIcon: ImageView = findViewById(R.id.menuIcon)
@@ -182,5 +191,28 @@ class About : AppCompatActivity() {
         • Optional integration with local emergency services (depending on location).
         """.trimIndent()
     }
-}
 
+    // Function to fetch username from Firestore and display it in the navigation drawer
+    private fun fetchUsernameFromFirestore() {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId != null) {
+            db.collection("users").document(userId).get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        val username = document.getString("fullName")
+                        if (!username.isNullOrEmpty()) {
+                            // Fetch the navigation header view
+                            val navigationHeaderView = navigationView.getHeaderView(0)
+
+                            // Find the TextView in the header and set the username
+                            val headerUsernameTextView = navigationHeaderView?.findViewById<TextView>(R.id.usernameTextView)
+                            headerUsernameTextView?.text = username // Update the username in the drawer header
+                        }
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    Toast.makeText(this, "Error fetching username: ${exception.message}", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+}

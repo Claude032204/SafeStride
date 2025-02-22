@@ -18,6 +18,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class Settings : AppCompatActivity() {
 
@@ -26,6 +28,7 @@ class Settings : AppCompatActivity() {
     private lateinit var switchGpsTracking: Switch
     private lateinit var buttonViewLastKnownLocation: Button
     private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var db: FirebaseFirestore
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
@@ -38,6 +41,8 @@ class Settings : AppCompatActivity() {
 
         sharedPreferences = getSharedPreferences("AppPrefs", MODE_PRIVATE)
 
+        // Initialize Firestore
+        db = FirebaseFirestore.getInstance()
 
         // Find the RelativeLayout by its ID
         val settingsLayout = findViewById<RelativeLayout>(R.id.settings)
@@ -72,6 +77,12 @@ class Settings : AppCompatActivity() {
             handleMenuSelection(menuItem)
             drawerLayout.closeDrawers() // Close drawer after selection
             true
+        }
+
+        // Fetch username from Firestore and display it in the navigation drawer
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId != null) {
+            fetchUsernameFromFirestore(userId)
         }
 
         // Switches
@@ -128,6 +139,31 @@ class Settings : AppCompatActivity() {
         buttonLogout.setOnClickListener {
             logoutUser()
         }
+    }
+
+    // Function to fetch username from Firestore and display it in the navigation drawer
+    private fun fetchUsernameFromFirestore(userId: String) {
+        db.collection("users").document(userId).get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val username = document.getString("fullName")
+                    if (!username.isNullOrEmpty()) {
+                        // Fetch the navigation header view
+                        val navigationHeaderView = navigationView.getHeaderView(0)
+
+                        // Find the TextView in the header and set the username
+                        val headerUsernameTextView = navigationHeaderView?.findViewById<TextView>(R.id.usernameTextView)
+                        headerUsernameTextView?.text = username // Update the username in the drawer header
+                    } else {
+                        Toast.makeText(this, "No Username Set", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(this, "No user data found", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .addOnFailureListener { exception ->
+                Toast.makeText(this, "Error fetching username: ${exception.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun showLocationPermissionDialog() {
@@ -205,17 +241,23 @@ class Settings : AppCompatActivity() {
                 }
             }
             R.id.nav_about -> startActivity(Intent(this, About::class.java))
-            R.id.nav_sign_out -> startActivity(Intent(this, LandingPage::class.java))
+            R.id.nav_sign_out -> logoutUser() // Handle Sign Out from the Drawer
         }
-}
-
-
-private fun showReconnectDialog() {
-        // Show a reconnect dialog
     }
 
     private fun logoutUser() {
+        // Clear SharedPreferences or any other session data
+        sharedPreferences.edit().clear().apply()
+
+        // Firebase sign out (if using Firebase Authentication)
+        FirebaseAuth.getInstance().signOut()
+
+        // Redirect to LandingPage or login screen
         startActivity(Intent(this, LandingPage::class.java))
-        finish()
+        finish() // Close the current activity after logout
+    }
+
+    private fun showReconnectDialog() {
+        // Show a reconnect dialog
     }
 }

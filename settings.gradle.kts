@@ -23,3 +23,4 @@ dependencyResolutionManagement {
     rootProject.name = "SafeStride"
         include(":app")
     }
+include(":wearsafe")

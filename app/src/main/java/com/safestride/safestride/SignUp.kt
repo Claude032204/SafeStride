@@ -9,28 +9,28 @@ import android.util.Patterns
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
-import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class SignUp : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth  // Firebase Auth instance
+    private lateinit var db: FirebaseFirestore  // Firestore instance
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sign_up)
 
-        // Initialize Firebase Auth
+        // Initialize Firebase Auth and Firestore
         auth = FirebaseAuth.getInstance()
+        db = FirebaseFirestore.getInstance()
 
+        // References to the fields in your layout
+        val usernameEditText: EditText = findViewById(R.id.usernameField) // Use the username field
         val emailEditText: EditText = findViewById(R.id.emailField)
-        val usernameEditText: EditText = findViewById(R.id.usernameField)
         val passwordEditText: EditText = findViewById(R.id.passwordField)
         val confirmPasswordEditText: EditText = findViewById(R.id.confirmPasswordField)
         val signUpButton: Button = findViewById(R.id.signupButton)
@@ -46,8 +46,8 @@ class SignUp : AppCompatActivity() {
         val textWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val isFormFilled = emailEditText.text.isNotEmpty() &&
-                        usernameEditText.text.isNotEmpty() &&
+                val isFormFilled = usernameEditText.text.isNotEmpty() &&
+                        emailEditText.text.isNotEmpty() &&
                         passwordEditText.text.isNotEmpty() &&
                         confirmPasswordEditText.text.isNotEmpty() &&
                         isValidEmail(emailEditText.text.toString()) &&
@@ -59,8 +59,8 @@ class SignUp : AppCompatActivity() {
         }
 
         // Attach TextWatcher to each field
-        emailEditText.addTextChangedListener(textWatcher)
         usernameEditText.addTextChangedListener(textWatcher)
+        emailEditText.addTextChangedListener(textWatcher)
         passwordEditText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
@@ -93,11 +93,12 @@ class SignUp : AppCompatActivity() {
 
         // Sign-Up Button Click Listener
         signUpButton.setOnClickListener {
+            val username = usernameEditText.text.toString() // Use usernameEditText here
             val email = emailEditText.text.toString()
             val password = passwordEditText.text.toString()
             val confirmPassword = confirmPasswordEditText.text.toString()
 
-            if (email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+            if (username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
                 Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show()
             } else if (password != confirmPassword) {
                 Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show()
@@ -110,10 +111,28 @@ class SignUp : AppCompatActivity() {
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener(this) { task ->
                         if (task.isSuccessful) {
-                            Toast.makeText(this, "Sign-up successful!", Toast.LENGTH_SHORT).show()
-                            val intent = Intent(this, Dashboard::class.java)
-                            startActivity(intent)
-                            finish()
+                            // Get the user's UID
+                            val userId = auth.currentUser?.uid
+
+                            // Create a user object to store in Firestore
+                            val user = hashMapOf(
+                                "username" to username, // Save the username here
+                                "email" to email
+                            )
+
+                            // Save the user information in Firestore under their UID
+                            userId?.let {
+                                db.collection("users").document(it).set(user)
+                                    .addOnSuccessListener {
+                                        Toast.makeText(this, "Sign-up successful!", Toast.LENGTH_SHORT).show()
+                                        val intent = Intent(this, Dashboard::class.java)
+                                        startActivity(intent)
+                                        finish()
+                                    }
+                                    .addOnFailureListener { exception ->
+                                        Toast.makeText(this, "Error saving user info: ${exception.message}", Toast.LENGTH_SHORT).show()
+                                    }
+                            }
                         } else {
                             Toast.makeText(this, "Sign-up failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                         }

@@ -2,61 +2,54 @@ package com.safestride.safestride
 
 import android.content.Intent
 import android.content.SharedPreferences
-import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
-import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
+import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class Dashboard : AppCompatActivity() {
 
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var usernameTextView: TextView
+
+    private val db = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-
         setContentView(R.layout.activity_dashboard)
 
+        // Initialize SharedPreferences
         sharedPreferences = getSharedPreferences("AppPrefs", MODE_PRIVATE)
 
         // Initialize DrawerLayout
         drawerLayout = findViewById(R.id.drawerLayout)
 
-        // Apply WindowInsets to the DrawerLayout for full-screen integration with the system bars
+        // Set up WindowInsets for full-screen integration
         ViewCompat.setOnApplyWindowInsetsListener(drawerLayout) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-
-            // Apply padding to the DrawerLayout to avoid content being pushed under the system bars
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
 
-        // Now apply WindowInsets to the main LinearLayout that holds your content
         val mainLayout = findViewById<LinearLayout>(R.id.main)
         ViewCompat.setOnApplyWindowInsetsListener(mainLayout) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            // Apply padding to the main content area as well
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
 
-        // Other initialization code for your activity
-
-
-
-    // Handle Menu Icon Click
+        // Handle Menu Icon Click
         val menuIcon: ImageView = findViewById(R.id.menuIcon)
         menuIcon.setOnClickListener {
             drawerLayout.openDrawer(GravityCompat.START)
@@ -89,7 +82,7 @@ class Dashboard : AppCompatActivity() {
         }
 
         // Handle Records Card Click
-        val cardRecords = findViewById<View>(R.id.cardRecords)
+        val cardRecords = findViewById<LinearLayout>(R.id.cardRecords)
         cardRecords.setOnClickListener {
             startActivity(Intent(this, Records::class.java))
         }
@@ -107,6 +100,33 @@ class Dashboard : AppCompatActivity() {
         profileSection?.setOnClickListener {
             startActivity(Intent(this, EditProfileActivity::class.java))
         }
+
+        // Get the username TextView from the header view
+        usernameTextView = navigationHeaderView?.findViewById(R.id.usernameTextView) ?: return
+
+        // Load the user's full name and set it in the Navigation Drawer header
+        loadUserData()
+    }
+
+    private fun loadUserData() {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            val userId = user.uid
+
+            // Fetch user data from Firestore
+            db.collection("users").document(userId).get()
+                .addOnSuccessListener { documentSnapshot ->
+                    if (documentSnapshot.exists()) {
+                        val fullName = documentSnapshot.getString("fullName") ?: "User"
+
+                        // Set the username in the Navigation Drawer header
+                        usernameTextView.text = fullName
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Failed to load user data: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        }
     }
 
     private fun handleMenuSelection(menuItem: MenuItem) {
@@ -122,7 +142,21 @@ class Dashboard : AppCompatActivity() {
                 }
             }
             R.id.nav_about -> startActivity(Intent(this, About::class.java))
-            R.id.nav_sign_out -> startActivity(Intent(this, LandingPage::class.java))
+            R.id.nav_sign_out -> logoutUser() // Handle sign out
         }
+    }
+
+    // Logout function to handle Firebase sign-out
+    private fun logoutUser() {
+        // Sign out from Firebase
+        FirebaseAuth.getInstance().signOut()
+
+        // Clear SharedPreferences (if needed)
+        sharedPreferences.edit().clear().apply()
+
+        // Redirect to LandingPage or login screen
+        val intent = Intent(this, LandingPage::class.java)
+        startActivity(intent)
+        finish() // Close the current activity after logout
     }
 }

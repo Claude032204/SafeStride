@@ -1,7 +1,6 @@
 package com.safestride.safestride
 
 import android.content.Intent
-import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.view.MenuItem
@@ -17,19 +16,23 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import android.content.SharedPreferences
 
 class EditProfileActivity : AppCompatActivity() {
 
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var navigationView: NavigationView
+    private lateinit var userNameTextView: TextView
     private lateinit var sharedPreferences: SharedPreferences
+
+    private lateinit var db: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_edit_profile)  // Your profile layout file
-
-        sharedPreferences = getSharedPreferences("AppPrefs", MODE_PRIVATE)
 
         // Find the RelativeLayout by its ID
         val editLayout = findViewById<RelativeLayout>(R.id.edit)
@@ -39,6 +42,33 @@ class EditProfileActivity : AppCompatActivity() {
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets // Return the insets
+        }
+
+        db = FirebaseFirestore.getInstance()
+
+        // Initialize UI elements
+        val profileImageView: ImageView = findViewById(R.id.profileIcon)
+        userNameTextView = findViewById(R.id.userName)
+
+        // Retrieve Full Name & Profile Image from Intent (if needed)
+        val fullName = intent.getStringExtra("fullName")
+        val profileImageUriString = intent.getStringExtra("profileImageUri")
+
+        // Set Full Name
+        userNameTextView.text = fullName ?: "User Name"
+
+        // Set Profile Picture if Available
+        if (!profileImageUriString.isNullOrEmpty()) {
+            profileImageView.setImageURI(Uri.parse(profileImageUriString))
+        }
+
+        // Get the current logged-in user’s UID
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId != null) {
+            // Fetch username from Firestore
+            fetchUsernameFromFirestore(userId)
+        } else {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show()
         }
 
         // Initialize DrawerLayout and NavigationView
@@ -66,22 +96,6 @@ class EditProfileActivity : AppCompatActivity() {
             true
         }
 
-        // Initialize UI elements
-        val profileImageView: ImageView = findViewById(R.id.profileIcon)
-        val userNameTextView: TextView = findViewById(R.id.userName)
-
-        // Retrieve Full Name & Profile Image from Intent
-        val fullName = intent.getStringExtra("fullName")
-        val profileImageUriString = intent.getStringExtra("profileImageUri")
-
-        // Set Full Name
-        userNameTextView.text = fullName ?: "User Name"
-
-        // Set Profile Picture if Available
-        if (!profileImageUriString.isNullOrEmpty()) {
-            profileImageView.setImageURI(Uri.parse(profileImageUriString))
-        }
-
         // Edit Profile Section
         findViewById<LinearLayout>(R.id.editProfile).setOnClickListener {
             startActivity(Intent(this, ProfileEditActivity::class.java))
@@ -102,9 +116,9 @@ class EditProfileActivity : AppCompatActivity() {
             startActivity(Intent(this, Settings::class.java))
         }
 
-        // Log Out Section
+        // Log Out Section on the Profile Page
         findViewById<LinearLayout>(R.id.logOut).setOnClickListener {
-            startActivity(Intent(this, LandingPage::class.java))
+            logoutUser()
         }
     }
 
@@ -121,7 +135,43 @@ class EditProfileActivity : AppCompatActivity() {
                 }
             }
             R.id.nav_about -> startActivity(Intent(this, About::class.java))
-            R.id.nav_sign_out -> startActivity(Intent(this, LandingPage::class.java))
+            R.id.nav_sign_out -> logoutUser() // Sign out from the Drawer
         }
+    }
+
+    // Function to handle sign-out action
+    private fun logoutUser() {
+        // Sign out from Firebase
+        FirebaseAuth.getInstance().signOut()
+
+        // Redirect to LandingPage or login screen
+        val intent = Intent(this, LandingPage::class.java)
+        startActivity(intent)
+        finish() // Close the current activity after logout
+    }
+
+    // Function to fetch username from Firestore and display it in the navigation drawer
+    private fun fetchUsernameFromFirestore(userId: String) {
+        db.collection("users").document(userId).get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val username = document.getString("fullName")
+                    if (!username.isNullOrEmpty()) {
+                        // Fetch the navigation header view
+                        val navigationHeaderView = navigationView.getHeaderView(0)
+
+                        // Find the TextView in the header and set the username
+                        val headerUsernameTextView = navigationHeaderView?.findViewById<TextView>(R.id.usernameTextView)
+                        headerUsernameTextView?.text = username // Update the username in the drawer header
+                    } else {
+                        Toast.makeText(this, "No Username Set", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(this, "No user data found", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .addOnFailureListener { exception ->
+                Toast.makeText(this, "Error fetching username: ${exception.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 }

@@ -9,15 +9,25 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class AddNoteActivity : AppCompatActivity() {
 
-    private var notePosition: Int? = null // Store the position of the note being edited or deleted
+    private lateinit var noteInput: EditText
+    private lateinit var db: FirebaseFirestore
+    private var userId: String? = null
+    private var noteId: String? = null  // Store Firestore document ID
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_add_note)
+
+        db = FirebaseFirestore.getInstance()
+        userId = FirebaseAuth.getInstance().currentUser?.uid
+
+        noteInput = findViewById(R.id.noteInput)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -25,51 +35,89 @@ class AddNoteActivity : AppCompatActivity() {
             insets
         }
 
-        // Retrieve the note content and position from the intent
+        // Retrieve the note content and ID from the intent
+        noteId = intent.getStringExtra("NOTE_ID")
         val noteContent = intent.getStringExtra("NOTE_CONTENT")
-        notePosition = intent.getIntExtra("NOTE_POSITION", -1) // Get the position of the note
+        noteInput.setText(noteContent)
 
-        val noteInput = findViewById<EditText>(R.id.noteInput)
-        noteInput.setText(noteContent) // Set the note content in the input field
-
-        // Back Arrow Click Listener
         findViewById<View>(R.id.backArrowIcon).setOnClickListener {
             finish() // Navigate back to NotesActivity
         }
 
-        // Save Icon Click Listener
         findViewById<View>(R.id.saveIcon).setOnClickListener {
-            val noteText = noteInput.text.toString()
-            if (noteText.isNotEmpty()) {
-                val resultIntent = Intent()
-                resultIntent.putExtra("NOTE", noteText)
-                setResult(RESULT_OK, resultIntent)
-                finish() // Return to NotesActivity with the new note
-            } else {
-                Toast.makeText(this, "Please enter a note", Toast.LENGTH_SHORT).show()
-            }
+            saveNoteToFirestore()
         }
 
-        // Delete Icon Click Listener
         findViewById<View>(R.id.deleteIcon).setOnClickListener {
             showDeleteConfirmationDialog()
         }
     }
 
+    // 🔹 Save or Update Note in Firestore
+    private fun saveNoteToFirestore() {
+        val noteText = noteInput.text.toString().trim()
+
+        if (noteText.isEmpty()) {
+            Toast.makeText(this, "Please enter a note", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (userId != null) {
+            val noteData = hashMapOf(
+                "content" to noteText,
+                "timestamp" to System.currentTimeMillis()
+            )
+
+            if (noteId == null) {
+                // Add new note
+                db.collection("profiles").document(userId!!)
+                    .collection("notes")
+                    .add(noteData)
+                    .addOnSuccessListener { documentReference ->
+                        Toast.makeText(this, "Note saved", Toast.LENGTH_SHORT).show()
+                        finish() // Close activity
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "Failed to save note: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+            } else {
+                // Update existing note
+                db.collection("profiles").document(userId!!)
+                    .collection("notes").document(noteId!!)
+                    .update(noteData as Map<String, Any>)
+                    .addOnSuccessListener {
+                        Toast.makeText(this, "Note updated", Toast.LENGTH_SHORT).show()
+                        finish() // Close activity
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "Failed to update note: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+            }
+        }
+    }
+
+    // 🔹 Delete Note from Firestore
+    private fun deleteNoteFromFirestore() {
+        if (userId != null && noteId != null) {
+            db.collection("profiles").document(userId!!)
+                .collection("notes").document(noteId!!)
+                .delete()
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Note deleted", Toast.LENGTH_SHORT).show()
+                    finish() // Close activity
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Failed to delete note: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+
+    // 🔹 Show Confirmation Dialog for Deleting Note
     private fun showDeleteConfirmationDialog() {
         val builder = android.app.AlertDialog.Builder(this)
         builder.setTitle("Discard Note?")
             .setMessage("Are you sure you want to discard this note?")
-            .setPositiveButton("Discard") { _, _ ->
-                val resultIntent = Intent()
-                resultIntent.putExtra("DELETE_NOTE", true)
-                resultIntent.putExtra(
-                    "NOTE_POSITION",
-                    notePosition ?: -1
-                ) // Ensure notePosition is valid
-                setResult(RESULT_OK, resultIntent)
-                finish() // Return to NotesActivity with the deleted note
-            }
+            .setPositiveButton("Discard") { _, _ -> deleteNoteFromFirestore() }
             .setNegativeButton("Cancel", null)
             .show()
     }

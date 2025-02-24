@@ -14,7 +14,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Sample Log"
-        android:textSize="14sp"
+        android:textSize="16sp"
         android:padding="5dp"
-        android:textColor="@android:color/black" />
+        android:textColor="@android:color/black"
+        android:textStyle="bold"/>
 </LinearLayout>

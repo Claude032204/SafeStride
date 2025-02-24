@@ -58,6 +58,9 @@ class Settings : AppCompatActivity() {
         drawerLayout = findViewById(R.id.drawerLayout)
         navigationView = findViewById(R.id.navigationView)
 
+        // Fetch and display the username in the navigation drawer
+        fetchUsernameFromFirestore()
+
         // Handle the Menu Icon click to open the drawer
         val menuIcon: ImageView = findViewById(R.id.menuIcon)
         menuIcon.setOnClickListener {
@@ -77,12 +80,6 @@ class Settings : AppCompatActivity() {
             handleMenuSelection(menuItem)
             drawerLayout.closeDrawers() // Close drawer after selection
             true
-        }
-
-        // Fetch username from Firestore and display it in the navigation drawer
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
-        if (userId != null) {
-            fetchUsernameFromFirestore(userId)
         }
 
         // Switches
@@ -142,28 +139,27 @@ class Settings : AppCompatActivity() {
     }
 
     // Function to fetch username from Firestore and display it in the navigation drawer
-    private fun fetchUsernameFromFirestore(userId: String) {
-        db.collection("users").document(userId).get()
-            .addOnSuccessListener { document ->
-                if (document.exists()) {
-                    val username = document.getString("fullName")
-                    if (!username.isNullOrEmpty()) {
-                        // Fetch the navigation header view
-                        val navigationHeaderView = navigationView.getHeaderView(0)
+    private fun fetchUsernameFromFirestore() {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId != null) {
+            db.collection("users").document(userId).get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        val username = document.getString("username")
+                        if (!username.isNullOrEmpty()) {
+                            // Fetch the navigation header view
+                            val navigationHeaderView = navigationView.getHeaderView(0)
 
-                        // Find the TextView in the header and set the username
-                        val headerUsernameTextView = navigationHeaderView?.findViewById<TextView>(R.id.usernameTextView)
-                        headerUsernameTextView?.text = username // Update the username in the drawer header
-                    } else {
-                        Toast.makeText(this, "No Username Set", Toast.LENGTH_SHORT).show()
+                            // Find the TextView in the header and set the username
+                            val headerUsernameTextView = navigationHeaderView?.findViewById<TextView>(R.id.usernameTextView)
+                            headerUsernameTextView?.text = username // Update the username in the drawer header
+                        }
                     }
-                } else {
-                    Toast.makeText(this, "No user data found", Toast.LENGTH_SHORT).show()
                 }
-            }
-            .addOnFailureListener { exception ->
-                Toast.makeText(this, "Error fetching username: ${exception.message}", Toast.LENGTH_SHORT).show()
-            }
+                .addOnFailureListener { exception ->
+                    Toast.makeText(this, "Error fetching username: ${exception.message}", Toast.LENGTH_SHORT).show()
+                }
+        }
     }
 
     private fun showLocationPermissionDialog() {
@@ -245,19 +241,30 @@ class Settings : AppCompatActivity() {
         }
     }
 
+    // Logout function to handle Firebase sign-out
     private fun logoutUser() {
-        // Clear SharedPreferences or any other session data
-        sharedPreferences.edit().clear().apply()
+        val auth = FirebaseAuth.getInstance()
+        val db = FirebaseFirestore.getInstance()
 
-        // Firebase sign out (if using Firebase Authentication)
-        FirebaseAuth.getInstance().signOut()
+        // 🔹 Stop Firestore operations before logging out
+        db.clearPersistence().addOnCompleteListener {
+            db.terminate().addOnCompleteListener {
+                // ✅ Sign out after Firestore has been stopped
+                auth.signOut()
 
-        // Redirect to LandingPage or login screen
-        startActivity(Intent(this, LandingPage::class.java))
-        finish() // Close the current activity after logout
+                // ✅ Clear SharedPreferences (if needed)
+                sharedPreferences.edit().clear().apply()
+
+                // ✅ Redirect to LandingPage or login screen
+                val intent = Intent(this, LandingPage::class.java)
+                startActivity(intent)
+                finish() // ✅ Close current activity after logout
+            }
+        }
     }
+}
 
     private fun showReconnectDialog() {
         // Show a reconnect dialog
     }
-}
+

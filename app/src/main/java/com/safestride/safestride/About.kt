@@ -199,7 +199,7 @@ class About : AppCompatActivity() {
             db.collection("users").document(userId).get()
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
-                        val username = document.getString("fullName")
+                        val username = document.getString("username")
                         if (!username.isNullOrEmpty()) {
                             // Fetch the navigation header view
                             val navigationHeaderView = navigationView.getHeaderView(0)

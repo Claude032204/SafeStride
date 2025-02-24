@@ -1,145 +1,57 @@
 package com.safestride.safestride
 
-import android.content.Intent
-import android.net.Uri
+import android.content.SharedPreferences
 import android.os.Bundle
-import android.view.View
-import android.widget.Button
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.EditText
 import android.widget.ImageView
-import android.widget.RelativeLayout
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import android.app.DatePickerDialog
+import android.content.Intent
+import android.text.Editable
+import android.text.TextWatcher
+import android.widget.Button
+import android.widget.RelativeLayout
+import android.widget.TextView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.google.android.material.imageview.ShapeableImageView
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
+import java.text.SimpleDateFormat
+import java.util.*
 
 class Patient : AppCompatActivity() {
 
-    // Personal Information Fields
     private lateinit var fullNameEditText: EditText
-    private lateinit var fullNameTextView: TextView
-    private lateinit var dobEditText: EditText
-    private lateinit var genderEditText: EditText
-    private lateinit var bloodTypeEditText: EditText
-    private lateinit var emergencyContactEditText: EditText
+    private lateinit var fullNameDisplay: TextView
+    private lateinit var birthdateEditText: EditText
+    private lateinit var calendarIcon: ImageView
+    private lateinit var genderAutoCompleteTextView: AutoCompleteTextView
+    private lateinit var bloodTypeAutoCompleteTextView: AutoCompleteTextView
+    private lateinit var mobilityStatusAutoCompleteTextView: AutoCompleteTextView
+    private lateinit var guardianEditText: EditText
+    private lateinit var conditionEditText: EditText
+    private lateinit var saveButton: Button
 
-    // Medical Information Fields
-    private lateinit var primaryConditionEditText: EditText
-    private lateinit var allergiesEditText: EditText
-    private lateinit var medicationsEditText: EditText
-    private lateinit var mobilityStatusEditText: EditText
-    private lateinit var communicationNeedsEditText: EditText
-
-    // Emergency Details Fields
-    private lateinit var hospitalEditText: EditText
-    private lateinit var medicalAlertEditText: EditText
-    private lateinit var guardianContactEditText: EditText
-
-    // Clear buttons for all fields
-    private lateinit var clearFullName: ImageView
-    private lateinit var clearDob: ImageView
-    private lateinit var clearGender: ImageView
-    private lateinit var clearBloodType: ImageView
-    private lateinit var clearEmergencyContact: ImageView
-
-    private lateinit var clearPrimaryCondition: ImageView
-    private lateinit var clearAllergies: ImageView
-    private lateinit var clearMedications: ImageView
-    private lateinit var clearMobilityStatus: ImageView
-    private lateinit var clearCommunicationNeeds: ImageView
-
-    private lateinit var clearHospital: ImageView
-    private lateinit var clearMedicalAlert: ImageView
-    private lateinit var clearGuardianContact: ImageView
-
-    // Profile and Submit/Edit buttons
-    private lateinit var profileIcon: ShapeableImageView
-    private lateinit var submitButton: Button
-    private lateinit var editButton: Button
+    private val calendar = Calendar.getInstance()
+    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var db: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_patient)
 
-        // Find the RelativeLayout by its ID
         val patientLayout = findViewById<RelativeLayout>(R.id.patient)
-
-        // Apply Window Insets listener to adjust padding for system bars
         ViewCompat.setOnApplyWindowInsetsListener(patientLayout) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets // Return the insets
+            insets
         }
 
-        // Initialize views (same as before)
-        profileIcon = findViewById(R.id.profileIcon)
-        submitButton = findViewById(R.id.submitButton)
-        editButton = findViewById(R.id.editButton)
-        fullNameEditText = findViewById(R.id.fullNameEditText)
-        fullNameTextView = findViewById(R.id.fullName) // Reference for displaying full name below the profile
-
-
-        // Initialize all the EditTexts for Personal, Medical, and Emergency Information
-        fullNameEditText = findViewById(R.id.fullNameEditText)
-        dobEditText = findViewById(R.id.dobEditText)
-        genderEditText = findViewById(R.id.genderEditText)
-        bloodTypeEditText = findViewById(R.id.bloodTypeEditText)
-        emergencyContactEditText = findViewById(R.id.emergencyContactEditText)
-
-        primaryConditionEditText = findViewById(R.id.primaryConditionEditText)
-        allergiesEditText = findViewById(R.id.allergiesEditText)
-        medicationsEditText = findViewById(R.id.medicationsEditText)
-        mobilityStatusEditText = findViewById(R.id.mobilityStatusEditText)
-        communicationNeedsEditText = findViewById(R.id.communicationNeedsEditText)
-
-        hospitalEditText = findViewById(R.id.hospitalEditText)
-        medicalAlertEditText = findViewById(R.id.medicalAlertEditText)
-        guardianContactEditText = findViewById(R.id.guardianContactEditText)
-
-        // Initialize clear buttons for all fields
-        clearFullName = findViewById(R.id.clearFullName)
-        clearDob = findViewById(R.id.clearDob)
-        clearGender = findViewById(R.id.clearGender)
-        clearBloodType = findViewById(R.id.clearBloodType)
-        clearEmergencyContact = findViewById(R.id.clearEmergencyContact)
-
-        clearPrimaryCondition = findViewById(R.id.clearPrimaryCondition)
-        clearAllergies = findViewById(R.id.clearAllergies)
-        clearMedications = findViewById(R.id.clearMedications)
-        clearMobilityStatus = findViewById(R.id.clearMobilityStatus)
-        clearCommunicationNeeds = findViewById(R.id.clearCommunicationNeeds)
-
-        clearHospital = findViewById(R.id.clearHospital)
-        clearMedicalAlert = findViewById(R.id.clearMedicalAlert)
-        clearGuardianContact = findViewById(R.id.clearGuardianContact)
-
-        // Set listeners for clearing the fields
-        setClearButtonListeners()
-
-        // Set click listener for profile icon
-        profileIcon.setOnClickListener {
-            openGallery()
-        }
-
-        // Submit button click listener
-        submitButton.setOnClickListener {
-            saveData()
-        }
-        // Set click listener for the submit button
-        submitButton.setOnClickListener {
-            // Get the full name from the EditText and display it in the TextView
-            val fullName = fullNameEditText.text.toString()
-            fullNameTextView.text = fullName // Update the TextView with the typed full name
-        }
-
-        // Edit button click listener
-        editButton.setOnClickListener {
-            toggleEditMode(true)
-        }
         // Find the back arrow icon by its ID
         val backArrowIcon: ImageView = findViewById(R.id.backArrowIcon)
 
@@ -150,132 +62,164 @@ class Patient : AppCompatActivity() {
             finish() // Optional: Close the current activity to avoid stacking
         }
 
-        // Load saved data from SharedPreferences (if any)
-        loadData()
+        db = FirebaseFirestore.getInstance()
+        sharedPreferences = getSharedPreferences("PatientProfile", MODE_PRIVATE)
+
+        fullNameEditText = findViewById(R.id.fullNameEditText)
+        fullNameDisplay = findViewById(R.id.fullName)
+        birthdateEditText = findViewById(R.id.birthdateEditText)
+        calendarIcon = findViewById(R.id.calendarIcon)
+        genderAutoCompleteTextView = findViewById(R.id.genderAutoCompleteTextView)
+        bloodTypeAutoCompleteTextView = findViewById(R.id.bloodTypeAutoCompleteTextView)
+        mobilityStatusAutoCompleteTextView = findViewById(R.id.mobilityStatusAutoCompleteTextView)
+        guardianEditText = findViewById(R.id.guardianEditText)
+        conditionEditText = findViewById(R.id.conditionEditText)
+        saveButton = findViewById(R.id.saveButton)
+
+        loadPatientProfile()
+
+        calendarIcon.setOnClickListener { openDatePickerDialog() }
+
+        // Set up AutoCompleteTextView for Gender with options
+        val genderOptions = arrayOf("Male", "Female")
+        val genderAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, genderOptions)
+        genderAutoCompleteTextView.setAdapter(genderAdapter)
+        genderAutoCompleteTextView.setThreshold(1) // filtering starts after 1 character
+
+        // Set up AutoCompleteTextView for Blood Type with options
+        val bloodTypeOptions = arrayOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
+        val bloodTypeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, bloodTypeOptions)
+        bloodTypeAutoCompleteTextView.setAdapter(bloodTypeAdapter)
+        bloodTypeAutoCompleteTextView.setThreshold(1)
+
+        // Set up AutoCompleteTextView for Mobility Status with options
+        val mobilityStatusOptions = arrayOf(
+            "Wheelchair User",
+            "Walker/Crutches User",
+            "Cane User",
+            "Non-Ambulatory (Unable to Walk)",
+            "Limited Mobility (Can Walk with Assistance or Devices)"
+        )
+        val mobilityStatusAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, mobilityStatusOptions)
+        mobilityStatusAutoCompleteTextView.setAdapter(mobilityStatusAdapter)
+        mobilityStatusAutoCompleteTextView.setThreshold(1)
+
+        // Attach onClickListeners for dropdown icons to reset filter and show all options
+        val genderDropdownIcon = findViewById<ImageView>(R.id.dropdownIcon)
+        genderDropdownIcon.setOnClickListener {
+            (genderAutoCompleteTextView.adapter as? ArrayAdapter<String>)?.filter?.filter(null)
+            genderAutoCompleteTextView.showDropDown()
+        }
+
+        val bloodTypeDropdownIcon = findViewById<ImageView>(R.id.bloodTypeDropdownIcon)
+        bloodTypeDropdownIcon.setOnClickListener {
+            (bloodTypeAutoCompleteTextView.adapter as? ArrayAdapter<String>)?.filter?.filter(null)
+            bloodTypeAutoCompleteTextView.showDropDown()
+        }
+
+        val mobilityStatusDropdownIcon = findViewById<ImageView>(R.id.mobilityStatusDropdownIcon)
+        mobilityStatusDropdownIcon.setOnClickListener {
+            (mobilityStatusAutoCompleteTextView.adapter as? ArrayAdapter<String>)?.filter?.filter(null)
+            mobilityStatusAutoCompleteTextView.showDropDown()
+        }
+
+        // TextWatcher for fullNameEditText to update fullNameDisplay
+        fullNameEditText.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(charSequence: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(charSequence: CharSequence?, start: Int, before: Int, count: Int) {
+                fullNameDisplay.text = charSequence.toString()
+            }
+            override fun afterTextChanged(editable: Editable?) {}
+        })
+
+        // Save button action
+        saveButton.setOnClickListener { savePatientProfile() }
     }
 
-    private fun setClearButtonListeners() {
-        clearFullName.setOnClickListener { clearField(fullNameEditText) }
-        clearDob.setOnClickListener { clearField(dobEditText) }
-        clearGender.setOnClickListener { clearField(genderEditText) }
-        clearBloodType.setOnClickListener { clearField(bloodTypeEditText) }
-        clearEmergencyContact.setOnClickListener { clearField(emergencyContactEditText) }
+    private fun openDatePickerDialog() {
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
 
-        clearPrimaryCondition.setOnClickListener { clearField(primaryConditionEditText) }
-        clearAllergies.setOnClickListener { clearField(allergiesEditText) }
-        clearMedications.setOnClickListener { clearField(medicationsEditText) }
-        clearMobilityStatus.setOnClickListener { clearField(mobilityStatusEditText) }
-        clearCommunicationNeeds.setOnClickListener { clearField(communicationNeedsEditText) }
-
-        clearHospital.setOnClickListener { clearField(hospitalEditText) }
-        clearMedicalAlert.setOnClickListener { clearField(medicalAlertEditText) }
-        clearGuardianContact.setOnClickListener { clearField(guardianContactEditText) }
+        val datePickerDialog = DatePickerDialog(this,
+            { _, selectedYear, selectedMonth, selectedDay ->
+                calendar.set(selectedYear, selectedMonth, selectedDay)
+                val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                val formattedDate = dateFormat.format(calendar.time)
+                birthdateEditText.setText(formattedDate)
+            },
+            year, month, day
+        )
+        datePickerDialog.show()
     }
 
-    private fun clearField(field: EditText) {
-        if (field.isFocusable) field.text.clear() // Clears the field only if it is editable
-    }
+    private fun savePatientProfile() {
+        val fullName = fullNameEditText.text.toString()
+        val birthdate = birthdateEditText.text.toString()
+        val gender = genderAutoCompleteTextView.text.toString()
+        val bloodType = bloodTypeAutoCompleteTextView.text.toString()
+        val mobilityStatus = mobilityStatusAutoCompleteTextView.text.toString()
+        val condition = conditionEditText.text.toString()
+        val guardian = guardianEditText.text.toString()
 
-    // Launch the gallery to pick an image
-    private fun openGallery() {
-        val intent = Intent(Intent.ACTION_PICK)
-        intent.type = "image/*"
-        startActivityForResult(intent, 100)
-    }
+        val patientProfile = hashMapOf(
+            "FullName" to fullName,
+            "Birthdate" to birthdate,
+            "Gender" to gender,
+            "BloodType" to bloodType,
+            "MobilityStatus" to mobilityStatus,
+            "Condition" to condition,
+            "Guardian" to guardian
+        )
 
-    // Handle the result of image selection
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == 100 && resultCode == RESULT_OK && data != null) {
-            val imageUri: Uri? = data.data
-            profileIcon.setImageURI(imageUri)
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId != null) {
+            db.collection("profiles")
+                .document(userId)
+                .set(patientProfile)
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Profile Saved", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error saving profile: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
         } else {
-            Toast.makeText(this, "Image selection failed", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "User not authenticated", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // Save form data into SharedPreferences
-    private fun saveData() {
-        val sharedPreferences = getSharedPreferences("PatientData", MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-
-        // Save all data for personal, medical, and emergency information
-        editor.putString("fullName", fullNameEditText.text.toString())
-        editor.putString("dob", dobEditText.text.toString())
-        editor.putString("gender", genderEditText.text.toString())
-        editor.putString("bloodType", bloodTypeEditText.text.toString())
-        editor.putString("emergencyContact", emergencyContactEditText.text.toString())
-
-        editor.putString("primaryCondition", primaryConditionEditText.text.toString())
-        editor.putString("allergies", allergiesEditText.text.toString())
-        editor.putString("medications", medicationsEditText.text.toString())
-        editor.putString("mobilityStatus", mobilityStatusEditText.text.toString())
-        editor.putString("communicationNeeds", communicationNeedsEditText.text.toString())
-
-        editor.putString("hospital", hospitalEditText.text.toString())
-        editor.putString("medicalAlert", medicalAlertEditText.text.toString())
-        editor.putString("guardianContact", guardianContactEditText.text.toString())
-
-        editor.apply()
-
-        Toast.makeText(this, "Data saved", Toast.LENGTH_SHORT).show()
-        toggleEditMode(false)
+    private fun loadPatientProfile() {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId != null) {
+            db.collection("profiles")
+                .document(userId)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        fullNameEditText.setText(document.getString("FullName"))
+                        fullNameDisplay.text = document.getString("FullName")
+                        birthdateEditText.setText(document.getString("Birthdate"))
+                        genderAutoCompleteTextView.setText(document.getString("Gender"))
+                        bloodTypeAutoCompleteTextView.setText(document.getString("BloodType"))
+                        mobilityStatusAutoCompleteTextView.setText(document.getString("MobilityStatus"))
+                        conditionEditText.setText(document.getString("Condition"))
+                        guardianEditText.setText(document.getString("Guardian"))
+                    } else {
+                        Toast.makeText(this, "No profile data found", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error loading profile: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        } else {
+            Toast.makeText(this, "User not authenticated", Toast.LENGTH_SHORT).show()
+        }
     }
 
-    // Load data from SharedPreferences
-    private fun loadData() {
-        val sharedPreferences = getSharedPreferences("PatientData", MODE_PRIVATE)
-
-        // Load all saved data for personal, medical, and emergency information
-        fullNameEditText.setText(sharedPreferences.getString("fullName", ""))
-        dobEditText.setText(sharedPreferences.getString("dob", ""))
-        genderEditText.setText(sharedPreferences.getString("gender", ""))
-        bloodTypeEditText.setText(sharedPreferences.getString("bloodType", ""))
-        emergencyContactEditText.setText(sharedPreferences.getString("emergencyContact", ""))
-
-        primaryConditionEditText.setText(sharedPreferences.getString("primaryCondition", ""))
-        allergiesEditText.setText(sharedPreferences.getString("allergies", ""))
-        medicationsEditText.setText(sharedPreferences.getString("medications", ""))
-        mobilityStatusEditText.setText(sharedPreferences.getString("mobilityStatus", ""))
-        communicationNeedsEditText.setText(sharedPreferences.getString("communicationNeeds", ""))
-
-        hospitalEditText.setText(sharedPreferences.getString("hospital", ""))
-        medicalAlertEditText.setText(sharedPreferences.getString("medicalAlert", ""))
-        guardianContactEditText.setText(sharedPreferences.getString("guardianContact", ""))
-
-        toggleEditMode(false)
-    }
-
-    // Toggle the edit mode for all fields
-    private fun toggleEditMode(isEditable: Boolean) {
-        // Personal Information Fields
-        toggleFieldEditability(isEditable, fullNameEditText, clearFullName)
-        toggleFieldEditability(isEditable, dobEditText, clearDob)
-        toggleFieldEditability(isEditable, genderEditText, clearGender)
-        toggleFieldEditability(isEditable, bloodTypeEditText, clearBloodType)
-        toggleFieldEditability(isEditable, emergencyContactEditText, clearEmergencyContact)
-
-        // Medical Information Fields
-        toggleFieldEditability(isEditable, primaryConditionEditText, clearPrimaryCondition)
-        toggleFieldEditability(isEditable, allergiesEditText, clearAllergies)
-        toggleFieldEditability(isEditable, medicationsEditText, clearMedications)
-        toggleFieldEditability(isEditable, mobilityStatusEditText, clearMobilityStatus)
-        toggleFieldEditability(isEditable, communicationNeedsEditText, clearCommunicationNeeds)
-
-        // Emergency Details Fields
-        toggleFieldEditability(isEditable, hospitalEditText, clearHospital)
-        toggleFieldEditability(isEditable, medicalAlertEditText, clearMedicalAlert)
-        toggleFieldEditability(isEditable, guardianContactEditText, clearGuardianContact)
-
-        // Submit button enable/disable
-        submitButton.isEnabled = isEditable
-    }
-
-    // Helper to toggle editability and clear button visibility
-    private fun toggleFieldEditability(isEditable: Boolean, field: EditText, clearButton: ImageView) {
-        field.isFocusable = isEditable
-        field.isFocusableInTouchMode = isEditable
-        clearButton.visibility = if (isEditable) View.VISIBLE else View.GONE
+    private fun logoutUser() {
+        FirebaseAuth.getInstance().signOut()
+        val intent = Intent(this, LandingPage::class.java)
+        startActivity(intent)
+        finish()
     }
 }

@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.firebase.analytics)
 
     implementation(libs.gson)
+    implementation(libs.play.services.auth)
 
 
 

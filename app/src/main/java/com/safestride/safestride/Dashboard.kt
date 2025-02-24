@@ -8,6 +8,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
@@ -27,6 +28,7 @@ class Dashboard : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContentView(R.layout.activity_dashboard)
 
         // Initialize SharedPreferences
@@ -104,29 +106,39 @@ class Dashboard : AppCompatActivity() {
         // Get the username TextView from the header view
         usernameTextView = navigationHeaderView?.findViewById(R.id.usernameTextView) ?: return
 
-        // Load the user's full name and set it in the Navigation Drawer header
-        loadUserData()
+        // Fetch the user ID from Firebase Authentication
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+
+        // If user ID is available, fetch user data (username) from Firestore
+        if (userId != null) {
+            fetchUsernameFromFirestore(userId)
+        }
     }
 
-    private fun loadUserData() {
-        val user = FirebaseAuth.getInstance().currentUser
-        if (user != null) {
-            val userId = user.uid
-
-            // Fetch user data from Firestore
-            db.collection("users").document(userId).get()
-                .addOnSuccessListener { documentSnapshot ->
-                    if (documentSnapshot.exists()) {
-                        val fullName = documentSnapshot.getString("fullName") ?: "User"
-
-                        // Set the username in the Navigation Drawer header
-                        usernameTextView.text = fullName
+    // Function to fetch username from Firestore and display it in the profile section
+    private fun fetchUsernameFromFirestore(userId: String) {
+        db.collection("users").document(userId).get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val username =
+                        document.getString("username") // Ensure that "username" field is correct in Firestore
+                    if (!username.isNullOrEmpty()) {
+                        // Set the username in the TextView
+                        usernameTextView.text = username
+                    } else {
+                        Toast.makeText(this, "No Username Set", Toast.LENGTH_SHORT).show()
                     }
+                } else {
+                    Toast.makeText(this, "No user data found", Toast.LENGTH_SHORT).show()
                 }
-                .addOnFailureListener { e ->
-                    Toast.makeText(this, "Failed to load user data: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-        }
+            }
+            .addOnFailureListener { exception ->
+                Toast.makeText(
+                    this,
+                    "Error fetching username: ${exception.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
     }
 
     private fun handleMenuSelection(menuItem: MenuItem) {
@@ -138,9 +150,14 @@ class Dashboard : AppCompatActivity() {
                 if (isGpsEnabled) {
                     startActivity(Intent(this, MapsActivity::class.java))
                 } else {
-                    Toast.makeText(this, "Enable GPS Tracking in Settings first!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Enable GPS Tracking in Settings first!",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
+
             R.id.nav_about -> startActivity(Intent(this, About::class.java))
             R.id.nav_sign_out -> logoutUser() // Handle sign out
         }
@@ -148,15 +165,23 @@ class Dashboard : AppCompatActivity() {
 
     // Logout function to handle Firebase sign-out
     private fun logoutUser() {
-        // Sign out from Firebase
-        FirebaseAuth.getInstance().signOut()
+        val auth = FirebaseAuth.getInstance()
+        val db = FirebaseFirestore.getInstance()
 
-        // Clear SharedPreferences (if needed)
-        sharedPreferences.edit().clear().apply()
+        // 🔹 Stop Firestore operations before logging out
+        db.clearPersistence().addOnCompleteListener {
+            db.terminate().addOnCompleteListener {
+                // ✅ Sign out after Firestore has been stopped
+                auth.signOut()
 
-        // Redirect to LandingPage or login screen
-        val intent = Intent(this, LandingPage::class.java)
-        startActivity(intent)
-        finish() // Close the current activity after logout
+                // ✅ Clear SharedPreferences (if needed)
+                sharedPreferences.edit().clear().apply()
+
+                // ✅ Redirect to LandingPage or login screen
+                val intent = Intent(this, LandingPage::class.java)
+                startActivity(intent)
+                finish() // ✅ Close current activity after logout
+            }
+        }
     }
 }

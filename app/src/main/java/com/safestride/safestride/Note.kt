@@ -2,32 +2,34 @@ package com.safestride.safestride
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.MotionEvent
 import android.view.View
 import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.ItemTouchHelper
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 
 class Note : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: NotesAdapter
-    private val notesList = mutableListOf<String>() // Empty list, no sample notes
+    private val notesList = mutableListOf<NoteModel>() // List of notes
+    private lateinit var db: FirebaseFirestore
+    private var userId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_note)
 
-        // Ensure the ID matches the one in your XML layout
         val noteLayout = findViewById<RelativeLayout>(R.id.note)
 
         // Apply Window Insets listener
@@ -37,18 +39,34 @@ class Note : AppCompatActivity() {
             insets
         }
 
+        db = FirebaseFirestore.getInstance()
+        userId = FirebaseAuth.getInstance().currentUser?.uid
 
-    recyclerView = findViewById(R.id.recyclerNotes)
+        // 🔹 Initialize RecyclerView
+        recyclerView = findViewById(R.id.recyclerNotes)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = NotesAdapter(notesList)
+
+        adapter = NotesAdapter(
+            notesList,
+            onItemClick = { selectedNote ->
+                val intent = Intent(this, AddNoteActivity::class.java)
+                intent.putExtra("NOTE_ID", selectedNote.id)
+                intent.putExtra("NOTE_CONTENT", selectedNote.content)
+                startActivityForResult(intent, 2) // Request code 2 for editing notes
+            },
+            onDeleteClick = { noteToDelete ->
+                noteToDelete.id?.let { deleteNoteFromFirestore(it) }
+            }
+        )
         recyclerView.adapter = adapter
 
-        // Back Arrow Click Listener
         findViewById<View>(R.id.backArrowIcon).setOnClickListener {
-            finish() // Close the current activity and return to the previous one
+            finish() // Close the activity
         }
 
-        // Add swipe-to-delete functionality
+        loadNotesFromFirestore() // Load notes from Firestore
+
+        // 🔹 Swipe to delete functionality
         val itemTouchHelperCallback =
             object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
                 override fun onMove(
@@ -56,126 +74,98 @@ class Note : AppCompatActivity() {
                     viewHolder: RecyclerView.ViewHolder,
                     target: RecyclerView.ViewHolder
                 ): Boolean {
-                    return false // We don't need dragging
+                    return false
                 }
 
                 override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                     val position = viewHolder.adapterPosition
-                    if (position != RecyclerView.NO_POSITION) {
-                        // Delete the swiped note
-                        notesList.removeAt(position)
-                        adapter.notifyItemRemoved(position)
-                        Toast.makeText(this@Note, "Note deleted", Toast.LENGTH_SHORT).show()
-                    }
-                }
 
-                override fun onChildDraw(
-                    c: android.graphics.Canvas,
-                    recyclerView: RecyclerView,
-                    viewHolder: RecyclerView.ViewHolder,
-                    dX: Float,
-                    dY: Float,
-                    actionState: Int,
-                    isCurrentlyActive: Boolean
-                ) {
-                    super.onChildDraw(
-                        c,
-                        recyclerView,
-                        viewHolder,
-                        dX,
-                        dY,
-                        actionState,
-                        isCurrentlyActive
-                    )
+                    // 🔹 Fix: Ensure valid position before deleting
+                    if (position != RecyclerView.NO_POSITION && position < notesList.size) {
+                        val noteToDelete = notesList[position]
 
-                    // Only swipe left (dX < 0) for delete icon
-                    if (dX < 0) {
-                        val deleteIcon = ContextCompat.getDrawable(
-                            viewHolder.itemView.context,
-                            R.drawable.delete
-                        ) // Use itemView context
-                        deleteIcon?.let {
-                            val itemView = viewHolder.itemView
-                            val iconMargin = (itemView.height - it.intrinsicHeight) / 2
-                            val iconTop = itemView.top + (itemView.height - it.intrinsicHeight) / 2
-                            val iconLeft = itemView.right - iconMargin - it.intrinsicWidth
-                            val iconRight = itemView.right - iconMargin
-                            val iconBottom = iconTop + it.intrinsicHeight
+                        noteToDelete.id?.let { noteId ->
+                            deleteNoteFromFirestore(noteId)
 
-                            it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
-                            it.draw(c)
+                            // 🔹 Remove from local list and update UI immediately
+                            notesList.removeAt(position)
+                            adapter.notifyItemRemoved(position)
                         }
+                    } else {
+                        // 🔹 Prevent invalid access
+                        adapter.notifyItemChanged(position)
                     }
                 }
             }
 
-        // Attach ItemTouchHelper to RecyclerView
         val itemTouchHelper = ItemTouchHelper(itemTouchHelperCallback)
         itemTouchHelper.attachToRecyclerView(recyclerView)
 
+        // 🔹 Floating button to add note
         val fabAddNote = findViewById<FloatingActionButton>(R.id.fabAddNote)
         fabAddNote.setOnClickListener {
-            // When the FAB is clicked, navigate to AddNoteActivity
             val intent = Intent(this, AddNoteActivity::class.java)
-            startActivityForResult(
-                intent,
-                1
-            )  // This will start AddNoteActivity and expects a result
+            startActivityForResult(intent, 1) // Request code 1 for adding new note
         }
+    }
 
-        recyclerView.addOnItemTouchListener(object : RecyclerView.OnItemTouchListener {
-            override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
-                val child = rv.findChildViewUnder(e.x, e.y)
-                if (child != null) {
-                    val position = rv.getChildAdapterPosition(child)
-                    val noteContent = notesList[position]
+    private fun loadNotesFromFirestore() {
+        if (userId != null) {
+            db.collection("profiles").document(userId!!)
+                .collection("notes")
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .addSnapshotListener { snapshots, e ->
+                    if (e != null) {
+                        Toast.makeText(this, "Error loading notes: ${e.message}", Toast.LENGTH_SHORT).show()
+                        return@addSnapshotListener
+                    }
 
-                    val intent = Intent(this@Note, AddNoteActivity::class.java)
-                    intent.putExtra("NOTE_CONTENT", noteContent)
-                    intent.putExtra(
-                        "NOTE_POSITION",
-                        position
-                    ) // Pass the position to edit or delete the note
-                    startActivityForResult(intent, 2) // Open AddNoteActivity for editing
+                    val newNotesList = mutableListOf<NoteModel>()
+                    if (snapshots != null) {
+                        for (document in snapshots.documents) {
+                            val note = NoteModel(
+                                id = document.id,
+                                content = document.getString("content") ?: "",
+                                timestamp = document.getLong("timestamp") ?: System.currentTimeMillis()
+                            )
+                            newNotesList.add(note)
+                        }
+
+                        // 🔹 Debug Log: Show real-time updates
+                        android.util.Log.d("FirestoreDebug", "Real-time update: ${newNotesList.size} notes retrieved")
+
+                        // 🔹 Update RecyclerView instantly
+                        notesList.clear()
+                        notesList.addAll(newNotesList)
+                        adapter.notifyDataSetChanged()
+                    }
                 }
-                return false
-            }
+        }
+    }
 
-            override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {}
-            override fun onRequestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {}
-        })
+    // 🔹 Delete Note from Firestore
+    private fun deleteNoteFromFirestore(noteId: String) {
+        if (userId != null) {
+            db.collection("profiles").document(userId!!)
+                .collection("notes").document(noteId)
+                .delete()
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Note deleted", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error deleting note: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 1 && resultCode == RESULT_OK) {
-            // Add new note from AddNoteActivity
-            val newNote = data?.getStringExtra("NOTE")
-            if (!newNote.isNullOrEmpty()) {
-                notesList.add(newNote) // Add new note to the list
-                adapter.notifyDataSetChanged() // Update RecyclerView
-            }
-        } else if (requestCode == 2 && resultCode == RESULT_OK) {
-            // Handle the updated note from AddNoteActivity
-            val updatedNote = data?.getStringExtra("UPDATED_NOTE")
-            val position = data?.getIntExtra("NOTE_POSITION", -1) // Get the position to update
-            if (!updatedNote.isNullOrEmpty() && position != null && position >= 0) {
-                if (position < notesList.size) { // Ensure position is within bounds
-                    notesList[position] = updatedNote // Update the note at that position
-                    adapter.notifyItemChanged(position) // Notify RecyclerView to update that item
-                }
-            }
 
-            // Handle deletion result
-            if (data?.getBooleanExtra("DELETE_NOTE", false) == true) {
-                val position = data?.getIntExtra("NOTE_POSITION", -1) ?: -1
-                if (position >= 0 && position < notesList.size) { // Check if position is valid
-                    notesList.removeAt(position) // Remove the note at the position
-                    adapter.notifyItemRemoved(position) // Notify the adapter that the note has been removed
-                    Toast.makeText(this, "Note deleted", Toast.LENGTH_SHORT).show()
-                }
-            }
-
+        if ((requestCode == 1 || requestCode == 2) && resultCode == RESULT_OK) {
+            android.util.Log.d("FirestoreDebug", "Reloading notes after adding/editing") // Debugging log
+            loadNotesFromFirestore() // 🔹 Ensures notes update when coming back from AddNoteActivity
         }
     }
+
 }
+

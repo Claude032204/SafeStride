@@ -2,19 +2,21 @@ package com.safestride.safestride
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.CalendarView
+import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import android.util.Log
-import android.widget.LinearLayout
-import androidx.activity.enableEdgeToEdge
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 
 class Reminder : AppCompatActivity() {
 
@@ -22,7 +24,8 @@ class Reminder : AppCompatActivity() {
     private lateinit var adapter: ReminderAdapter
     private val remindersList = mutableListOf<ReminderClass>()
 
-    private val ADD_REMINDER_REQUEST_CODE = 1
+    private val db = FirebaseFirestore.getInstance()
+    private val userId = FirebaseAuth.getInstance().currentUser?.uid
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,11 +44,11 @@ class Reminder : AppCompatActivity() {
         recyclerView.layoutManager = GridLayoutManager(this, 2)
 
         // Adapter Setup
-        adapter = ReminderAdapter(remindersList) { saveReminders() }
+        adapter = ReminderAdapter(remindersList) { deleteReminderFromFirestore(it) }
         recyclerView.adapter = adapter
 
-        // Load saved reminders from SharedPreferences after adapter is initialized
-        loadReminders()
+        // Load saved reminders from Firestore
+        loadRemindersFromFirestore()
 
         // Calendar Setup
         val calendarView: CalendarView = findViewById(R.id.calendarView)
@@ -55,72 +58,83 @@ class Reminder : AppCompatActivity() {
 
         // Add Reminder Button
         findViewById<FloatingActionButton>(R.id.fabAddReminder).setOnClickListener {
-            // Start AddReminderActivity to add a new reminder
             val intent = Intent(this, AddReminderActivity::class.java)
-            startActivityForResult(intent, ADD_REMINDER_REQUEST_CODE)
+            startActivityForResult(intent, 1)
         }
 
         // Back Arrow Click Listener
         findViewById<ImageView>(R.id.backArrowIcon).setOnClickListener {
-            finish() // Go back to the previous activity
+            finish()
         }
     }
 
-    // Inside Reminder Activity (onCreate or some other method where you handle the result)
+    // Handle Result from AddReminderActivity
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (resultCode == RESULT_OK && data != null) {
+        if (requestCode == 1 && resultCode == RESULT_OK && data != null) {
             val reminderItem = data.getSerializableExtra("REMINDER") as? ReminderClass
-
             reminderItem?.let {
-                // Now you can add the reminderItem to the list and update the UI
-                remindersList.add(it)
-                adapter.notifyDataSetChanged()  // Notify the adapter to update the list
-                saveReminders()  // Save the updated list to SharedPreferences
+                saveReminderToFirestore(it)
             }
         }
     }
 
-    fun loadReminders() {
-        val sharedPreferences = getSharedPreferences("reminders", MODE_PRIVATE)
-        val json = sharedPreferences.getString("reminders_list", null)
+    // 🔹 Save Reminder to Firestore
+    private fun saveReminderToFirestore(reminder: ReminderClass) {
+        if (userId == null) return
 
-        // Check if the JSON is null or empty and return an empty list if so
-        if (json.isNullOrEmpty()) {
-            remindersList.clear()
-            adapter.notifyDataSetChanged()
-            return
-        }
-
-        val gson = Gson()
-        val type = object : TypeToken<List<ReminderClass>>() {}.type
-
-        try {
-            val loadedReminders: List<ReminderClass> = gson.fromJson(json, type)
-            remindersList.clear()
-            remindersList.addAll(loadedReminders)
-            adapter.notifyDataSetChanged()
-        } catch (e: Exception) {
-            // Handle the case where deserialization fails, e.g., corrupted data
-            Log.e("Reminder", "Failed to load reminders: ${e.message}")
-            remindersList.clear()
-            adapter.notifyDataSetChanged()
-        }
+        db.collection("reminders").document(userId)
+            .collection("caregiverReminders")
+            .add(reminder)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Reminder Added", Toast.LENGTH_SHORT).show()
+                loadRemindersFromFirestore()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
-    fun saveReminders() {
-        val gson = Gson()
-        val json = gson.toJson(remindersList)
-        val sharedPreferences = getSharedPreferences("reminders", MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
+    // 🔹 Load Reminders from Firestore
+    private fun loadRemindersFromFirestore() {
+        if (userId == null) return
 
-        try {
-            editor.putString("reminders_list", json)
-            editor.apply()
-        } catch (e: Exception) {
-            // Handle any potential errors during saving (e.g., SharedPreferences failure)
-            Log.e("Reminder", "Failed to save reminders: ${e.message}")
-        }
+        db.collection("reminders").document(userId)
+            .collection("caregiverReminders")
+            .orderBy("date", Query.Direction.ASCENDING)
+            .get()
+            .addOnSuccessListener { documents ->
+                remindersList.clear()
+                for (document in documents) {
+                    val reminder = document.toObject(ReminderClass::class.java)
+                    remindersList.add(reminder)
+                }
+                adapter.notifyDataSetChanged()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error loading reminders: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    // 🔹 Delete Reminder from Firestore
+    private fun deleteReminderFromFirestore(reminder: ReminderClass) {
+        if (userId == null) return
+
+        db.collection("reminders").document(userId)
+            .collection("caregiverReminders")
+            .whereEqualTo("title", reminder.title)
+            .whereEqualTo("date", reminder.date)
+            .whereEqualTo("time", reminder.time)
+            .get()
+            .addOnSuccessListener { documents ->
+                for (document in documents) {
+                    document.reference.delete()
+                        .addOnSuccessListener {
+                            Toast.makeText(this, "Reminder Deleted", Toast.LENGTH_SHORT).show()
+                            loadRemindersFromFirestore()
+                        }
+                }
+            }
     }
 }

@@ -5,8 +5,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import java.text.SimpleDateFormat
+import java.util.*
 
-class EmergencyLogsAdapter(private val logs: List<String>) :
+class EmergencyLogsAdapter(private val logs: List<EmergencyLogModel>) :
     RecyclerView.Adapter<EmergencyLogsAdapter.LogViewHolder>() {
 
     class LogViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -20,8 +22,20 @@ class EmergencyLogsAdapter(private val logs: List<String>) :
     }
 
     override fun onBindViewHolder(holder: LogViewHolder, position: Int) {
-        holder.logText.text = logs[position]
+        val log = logs[position]
+
+        // Format timestamp
+        val formattedTime = formatTimestamp(log.timestamp)
+
+        // Display log information
+        holder.logText.text = "$formattedTime: ${log.status} (Resolved: ${if (log.resolved) "Yes" else "No"})"
     }
 
     override fun getItemCount(): Int = logs.size
+
+    // 🔹 Helper function to format timestamp
+    private fun formatTimestamp(timestamp: Long): String {
+        val sdf = SimpleDateFormat("hh:mm a, MMM dd yyyy", Locale.getDefault())
+        return sdf.format(Date(timestamp))
+    }
 }

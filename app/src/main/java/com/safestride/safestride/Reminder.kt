@@ -96,26 +96,29 @@ class Reminder : AppCompatActivity() {
             }
     }
 
-    // 🔹 Load Reminders from Firestore
     private fun loadRemindersFromFirestore() {
         if (userId == null) return
 
         db.collection("reminders").document(userId)
             .collection("caregiverReminders")
-            .orderBy("date", Query.Direction.ASCENDING)
-            .get()
-            .addOnSuccessListener { documents ->
-                remindersList.clear()
-                for (document in documents) {
-                    val reminder = document.toObject(ReminderClass::class.java)
-                    remindersList.add(reminder)
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshots, error ->
+                if (error != null) {
+                    Toast.makeText(this, "Failed to load reminders: ${error.message}", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
                 }
-                adapter.notifyDataSetChanged()
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Error loading reminders: ${e.message}", Toast.LENGTH_SHORT).show()
+
+                if (snapshots != null) {
+                    remindersList.clear()
+                    for (document in snapshots) {
+                        val reminder = document.toObject(ReminderClass::class.java)
+                        remindersList.add(reminder)
+                    }
+                    adapter.notifyDataSetChanged()
+                }
             }
     }
+
 
     // 🔹 Delete Reminder from Firestore
     private fun deleteReminderFromFirestore(reminder: ReminderClass) {

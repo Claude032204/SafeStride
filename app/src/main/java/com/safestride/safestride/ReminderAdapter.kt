@@ -6,11 +6,16 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class ReminderAdapter(
     private val remindersList: MutableList<ReminderClass>,
     private val deleteReminder: (ReminderClass) -> Unit
 ) : RecyclerView.Adapter<ReminderAdapter.ReminderViewHolder>() {
+
+    private val db = FirebaseFirestore.getInstance()
+    private val userId = FirebaseAuth.getInstance().currentUser?.uid
 
     inner class ReminderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val reminderTitle: TextView = itemView.findViewById(R.id.reminderTitle)
@@ -35,11 +40,33 @@ class ReminderAdapter(
             holder.doneButton.visibility = if (holder.doneButton.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
 
-        // Delete reminder on "Done" button click
+        // Delete reminder & send notification to Firestore when "Done" button is clicked
         holder.doneButton.setOnClickListener {
             deleteReminder(reminder)
+            addReminderNotificationToFirestore(reminder)
         }
     }
 
     override fun getItemCount(): Int = remindersList.size
+
+    // 🔹 Function to Send Reminder Notification to Firestore
+    private fun addReminderNotificationToFirestore(reminder: ReminderClass) {
+        if (userId == null) return
+
+        val notificationData = hashMapOf(
+            "title" to "Reminder Completed",
+            "message" to "You completed the reminder: ${reminder.title}",
+            "timestamp" to System.currentTimeMillis()
+        )
+
+        db.collection("notifications").document(userId)
+            .collection("reminders")
+            .add(notificationData)
+            .addOnSuccessListener {
+                println("🔔 Reminder notification added successfully!")
+            }
+            .addOnFailureListener { e ->
+                println("❌ Error adding reminder notification: ${e.message}")
+            }
+    }
 }

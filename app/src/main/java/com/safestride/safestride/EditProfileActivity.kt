@@ -118,14 +118,26 @@ class EditProfileActivity : AppCompatActivity() {
         }
     }
 
+    // Logout function to handle Firebase sign-out
     private fun logoutUser() {
         val auth = FirebaseAuth.getInstance()
-        auth.signOut()
-        sharedPreferences.edit().clear().apply()
+        val db = FirebaseFirestore.getInstance()
 
-        val intent = Intent(this, LandingPage::class.java)
-        startActivity(intent)
-        finish()
+        // 🔹 Stop Firestore operations before logging out
+        db.clearPersistence().addOnCompleteListener {
+            db.terminate().addOnCompleteListener {
+                // ✅ Sign out after Firestore has been stopped
+                auth.signOut()
+
+                // ✅ Clear SharedPreferences (if needed)
+                sharedPreferences.edit().clear().apply()
+
+                // ✅ Redirect to LandingPage or login screen
+                val intent = Intent(this, LandingPage::class.java)
+                startActivity(intent)
+                finish() // ✅ Close current activity after logout
+            }
+        }
     }
 
     private fun fetchUsernameFromFirestore() {

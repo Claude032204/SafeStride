@@ -69,7 +69,7 @@ class ReminderReceiver : BroadcastReceiver() {
 
         // Build Notification
         val notificationBuilder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.notification) // Replace with your icon
+            .setSmallIcon(R.drawable.logoo) // Replace with your icon
             .setContentTitle("Reminder Alert!")
             .setContentText(message)
             .setAutoCancel(true)

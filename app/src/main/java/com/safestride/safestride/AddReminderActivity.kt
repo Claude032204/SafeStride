@@ -1,9 +1,13 @@
 package com.safestride.safestride
 
+import android.Manifest
 import android.app.AlarmManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -11,10 +15,17 @@ import android.view.View
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.android.volley.Request
+import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.Volley
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import org.json.JSONObject
 import java.util.Calendar
 
 class AddReminderActivity : AppCompatActivity() {
@@ -57,6 +68,9 @@ class AddReminderActivity : AppCompatActivity() {
             finish()
         }
 
+        // 🔹 Request Notification Permission (Android 13+)
+        requestNotificationPermission()
+
         // Add Reminder Button Click Listener
         addReminderButton.setOnClickListener {
             val message = reminderMessageInput.text.toString()
@@ -83,10 +97,13 @@ class AddReminderActivity : AppCompatActivity() {
                     .addOnSuccessListener {
                         Toast.makeText(this, "Reminder Added!", Toast.LENGTH_SHORT).show()
 
-                        // ✅ Only Schedule Notification when permission is allowed
+                        // ✅ Schedule Local Notification
                         if (checkAndRequestAlarmPermission()) {
                             scheduleNotification(reminderTime, message)
                         }
+
+                        // ✅ Send FCM Push Notification
+                        sendReminderToFCM(message)
 
                         setResult(RESULT_OK)
                         finish()
@@ -96,6 +113,20 @@ class AddReminderActivity : AppCompatActivity() {
                     }
             } else {
                 Toast.makeText(this, "Please enter a reminder message", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // 🔹 Request Notification Permission (Android 13+)
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(
+                    this, Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101
+                )
             }
         }
     }
@@ -113,7 +144,7 @@ class AddReminderActivity : AppCompatActivity() {
         return true
     }
 
-    // 🔹 Schedule Notification for Reminder
+    // 🔹 Schedule Local Notification
     private fun scheduleNotification(reminderTime: Calendar, message: String) {
         val intent = Intent(this, ReminderReceiver::class.java).apply {
             putExtra("REMINDER_MESSAGE", message)
@@ -121,7 +152,7 @@ class AddReminderActivity : AppCompatActivity() {
 
         val pendingIntent = PendingIntent.getBroadcast(
             this,
-            System.currentTimeMillis().toInt(), // Unique request code
+            System.currentTimeMillis().toInt(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -132,5 +163,54 @@ class AddReminderActivity : AppCompatActivity() {
             reminderTime.timeInMillis,
             pendingIntent
         )
+    }
+
+    // 🔹 Send FCM Push Notification
+    private fun sendReminderToFCM(message: String) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection("users").document(userId).get()
+            .addOnSuccessListener { document ->
+                val fcmToken = document.getString("fcmToken")
+
+                if (!fcmToken.isNullOrEmpty()) {
+                    val notificationData = mapOf(
+                        "to" to fcmToken,
+                        "data" to mapOf(
+                            "title" to "Reminder Alert!",
+                            "message" to message
+                        )
+                    )
+
+                    sendPushNotification(notificationData)
+                }
+            }
+    }
+
+    // 🔹 Send Push Notification via FCM API
+    private fun sendPushNotification(notificationData: Map<String, Any>) {
+        val jsonBody = JSONObject(notificationData)
+
+        val request = object : JsonObjectRequest(
+            Request.Method.POST,
+            "https://fcm.googleapis.com/fcm/send",
+            jsonBody,
+            { response ->
+                println("FCM Notification sent: $response")
+            },
+            { error ->
+                println("Error sending FCM Notification: ${error.message}")
+            }
+        ) {
+            override fun getHeaders(): MutableMap<String, String> {
+                val headers = HashMap<String, String>()
+                headers["Authorization"] = "key=YOUR_SERVER_KEY"  // 🔹 Replace with your Firebase Server Key
+                headers["Content-Type"] = "application/json"
+                return headers
+            }
+        }
+
+        Volley.newRequestQueue(this).add(request)
     }
 }

@@ -45,6 +45,7 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.play.services.wearable)
+    implementation(libs.volley)
     // Play Services Auth (for authentication features)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -58,6 +59,8 @@ dependencies {
 
     implementation(libs.gson)
     implementation(libs.play.services.auth)
+
+    implementation (libs.firebase.messaging)
 
 
 

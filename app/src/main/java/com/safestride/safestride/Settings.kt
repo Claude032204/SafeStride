@@ -6,7 +6,10 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.text.InputType
+import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
@@ -18,6 +21,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -92,11 +96,13 @@ class Settings : AppCompatActivity() {
         val buttonEditProfile: Button = findViewById(R.id.buttonEditProfile)
         val buttonChangePassword: Button = findViewById(R.id.buttonChangePassword)
         val buttonLogout: Button = findViewById(R.id.buttonLogout)
+        val buttonDeleteAccount: Button = findViewById(R.id.buttonDeleteAccount)
 
         // Load GPS Tracking status from SharedPreferences
         val isGpsEnabled = sharedPreferences.getBoolean("gps_tracking_enabled", false)
         switchGpsTracking.isChecked = isGpsEnabled
-        buttonViewLastKnownLocation.isEnabled = isGpsEnabled // Enable only if GPS was enabled before
+        buttonViewLastKnownLocation.isEnabled =
+            isGpsEnabled // Enable only if GPS was enabled before
 
         // Handle GPS Tracking switch toggle
         switchGpsTracking.setOnCheckedChangeListener { _, isChecked ->
@@ -151,13 +157,19 @@ class Settings : AppCompatActivity() {
                             val navigationHeaderView = navigationView.getHeaderView(0)
 
                             // Find the TextView in the header and set the username
-                            val headerUsernameTextView = navigationHeaderView?.findViewById<TextView>(R.id.usernameTextView)
-                            headerUsernameTextView?.text = username // Update the username in the drawer header
+                            val headerUsernameTextView =
+                                navigationHeaderView?.findViewById<TextView>(R.id.usernameTextView)
+                            headerUsernameTextView?.text =
+                                username // Update the username in the drawer header
                         }
                     }
                 }
                 .addOnFailureListener { exception ->
-                    Toast.makeText(this, "Error fetching username: ${exception.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Error fetching username: ${exception.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
         }
     }
@@ -183,8 +195,15 @@ class Settings : AppCompatActivity() {
     }
 
     private fun requestLocationPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
 
             ActivityCompat.requestPermissions(
                 this,
@@ -233,9 +252,14 @@ class Settings : AppCompatActivity() {
                 if (isGpsEnabled) {
                     startActivity(Intent(this, MapsActivity::class.java))
                 } else {
-                    Toast.makeText(this, "Enable GPS Tracking in Settings first!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Enable GPS Tracking in Settings first!",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
+
             R.id.nav_about -> startActivity(Intent(this, About::class.java))
             R.id.nav_sign_out -> logoutUser() // Handle Sign Out from the Drawer
         }
@@ -262,9 +286,142 @@ class Settings : AppCompatActivity() {
             }
         }
     }
-}
 
     private fun showReconnectDialog() {
         // Show a reconnect dialog
     }
 
+    fun onDeleteAccountClick(view: View) {
+        showDeleteConfirmationDialog()
+    }
+
+    // 🔹 Step 1: Show Delete Confirmation Dialog
+    private fun showDeleteConfirmationDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Delete Account")
+        builder.setMessage("Are you sure you want to permanently delete your account? This action cannot be undone.")
+
+        builder.setPositiveButton("Yes") { _, _ ->
+            showPasswordConfirmationDialog()
+        }
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            dialog.dismiss()
+        }
+
+        val alertDialog = builder.create()
+        alertDialog.show()
+    }
+
+    // 🔹 Step 2: Show Password Confirmation Dialog
+    private fun showPasswordConfirmationDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_confirm_password, null)
+        val passwordInput = dialogView.findViewById<EditText>(R.id.passwordInput)
+        val confirmPasswordInput = dialogView.findViewById<EditText>(R.id.confirmPasswordInput)
+        val eyeIconPassword = dialogView.findViewById<ImageView>(R.id.eyeIconPassword)
+        val eyeIconConfirmPassword = dialogView.findViewById<ImageView>(R.id.eyeIconConfirmPassword)
+
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Confirm Password")
+        builder.setView(dialogView)
+
+        builder.setPositiveButton("Delete Account") { _, _ ->
+
+            val password = passwordInput.text.toString().trim()
+            val confirmPassword = confirmPasswordInput.text.toString().trim()
+
+            if (password.isEmpty() || confirmPassword.isEmpty()) {
+                Toast.makeText(this, "Please enter your password", Toast.LENGTH_SHORT).show()
+                return@setPositiveButton
+            }
+
+            if (password != confirmPassword) {
+                Toast.makeText(this, "Passwords do not match!", Toast.LENGTH_SHORT).show()
+                return@setPositiveButton
+            }
+
+            deleteUserAccount(password)
+        }
+
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            dialog.dismiss()
+        }
+
+        val alertDialog = builder.create()
+        alertDialog.show()
+
+        eyeIconPassword.setOnClickListener {
+            togglePasswordVisibility(passwordInput, eyeIconPassword)
+        }
+
+        eyeIconConfirmPassword.setOnClickListener {
+            togglePasswordVisibility(confirmPasswordInput, eyeIconConfirmPassword)
+        }
+    }
+
+    // 🔹 Toggle Password Visibility
+    private fun togglePasswordVisibility(editText: EditText, eyeIcon: ImageView) {
+        if (editText.inputType == InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD) {
+            editText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_NORMAL
+            eyeIcon.setImageResource(R.drawable.openeye)
+        } else {
+            editText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            eyeIcon.setImageResource(R.drawable.eyeclosed)
+        }
+        editText.setSelection(editText.text.length)
+    }
+
+    private fun deleteUserAccount(password: String) {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null && user.email != null) {
+            val credential = EmailAuthProvider.getCredential(user.email!!, password)
+
+            user.reauthenticate(credential)
+                .addOnSuccessListener {
+                    val userId = user.uid
+
+                    db.collection("users").document(userId)
+                        .delete()
+                        .addOnSuccessListener {
+                            user.delete()
+                                .addOnSuccessListener {
+                                    Toast.makeText(
+                                        this,
+                                        "Account deleted successfully",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+
+                                    // ✅ Sign out and go to LandingPage
+                                    FirebaseAuth.getInstance().signOut()
+
+                                    val intent = Intent(this, LandingPage::class.java)
+                                    intent.flags =
+                                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                    startActivity(intent)
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(
+                                        this,
+                                        "Failed to delete account: ${e.message}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(
+                                this,
+                                "Error deleting user data: ${e.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                }
+                .addOnFailureListener {
+                    Toast.makeText(
+                        this,
+                        "Incorrect password. Please try again.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+        }
+    }
+
+}

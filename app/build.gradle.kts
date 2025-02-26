@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.play.services.auth)
 
     implementation (libs.firebase.messaging)
+    implementation(libs.facebook.login)
 
 
 

@@ -14,33 +14,114 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.FirebaseUser
+import com.facebook.FacebookSdk
+import com.facebook.appevents.AppEventsLogger
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.AccessToken
+import com.google.firebase.auth.FacebookAuthProvider
+
 
 class SignUp : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth  // Firebase Auth instance
     private lateinit var db: FirebaseFirestore  // Firestore instance
 
+    private val RC_SIGN_IN = 9001  // Request code for Google Sign-In
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Initialize Facebook SDK with the Client Token
+        FacebookSdk.setClientToken(getString(R.string.facebook_client_token))
+        FacebookSdk.sdkInitialize(applicationContext)
+        AppEventsLogger.activateApp(application)
         setContentView(R.layout.activity_sign_up)
+
+        // Initialize Facebook SDK
+        FacebookSdk.sdkInitialize(applicationContext)
+        AppEventsLogger.activateApp(application)
 
         // Initialize Firebase Auth and Firestore
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
         // References to the fields in your layout
-        val usernameEditText: EditText = findViewById(R.id.usernameField) // Use the username field
-        val emailEditText: EditText = findViewById(R.id.emailField)
-        val passwordEditText: EditText = findViewById(R.id.passwordField)
-        val confirmPasswordEditText: EditText = findViewById(R.id.confirmPasswordField)
+        val usernameEditText: EditText = findViewById(R.id.usernameField) // Username field
+        val emailEditText: EditText = findViewById(R.id.emailField) // Email field
+        val passwordEditText: EditText = findViewById(R.id.passwordField) // Password field
+        val confirmPasswordEditText: EditText = findViewById(R.id.confirmPasswordField) // Confirm password field
         val signUpButton: Button = findViewById(R.id.signupButton)
         val alreadyHaveAccountText: TextView = findViewById(R.id.loginText)
         val eyeIconPassword: ImageView = findViewById(R.id.eyeIconPassword)
         val eyeIconConfirmPassword: ImageView = findViewById(R.id.eyeIconConfirmPassword)
         val passwordRequirementsText: TextView = findViewById(R.id.passwordRequirementsText)
+        val googleSignUpButton: ImageView = findViewById(R.id.googleLogin) // Google Sign-Up Button
+        val facebookSignUpButton: ImageView = findViewById(R.id.facebookLogin) // Facebook Sign-Up Button
 
-        // Initially disable the Sign Up button
-        signUpButton.isEnabled = false
+        // Check if the email field has been passed from the login screen (Google Sign-In)
+        val email = intent.getStringExtra("email")
+        email?.let {
+            emailEditText.setText(it)  // Pre-fill the email field with the selected Google account's email
+        }
+
+        // Initialize Google Sign-In
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id))  // Web Client ID
+            .requestEmail()
+            .build()
+
+        val googleSignInClient = GoogleSignIn.getClient(this, gso)
+
+        // Google Sign-Up Button Click Listener
+        googleSignUpButton.setOnClickListener {
+            // Sign out the previous Google user to allow account selection
+            googleSignInClient.signOut()
+                .addOnCompleteListener(this) {
+                    // After signing out, initiate the sign-in process again
+                    val signInIntent = googleSignInClient.signInIntent
+                    startActivityForResult(signInIntent, RC_SIGN_IN)
+                }
+        }
+
+        // Facebook login button setup
+        val callbackManager = CallbackManager.Factory.create()
+
+        // Facebook Sign-Up Button Click Listener
+        facebookSignUpButton.setOnClickListener {
+            LoginManager.getInstance().logInWithReadPermissions(this, listOf("email", "public_profile"))
+        }
+
+        // Register the callback for Facebook login
+        LoginManager.getInstance().registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
+            override fun onSuccess(result: LoginResult) {
+                val accessToken = result?.accessToken
+                // Authenticate with Firebase using the Facebook token
+                firebaseAuthWithFacebook(accessToken)
+            }
+
+            override fun onCancel() {
+                Toast.makeText(this@SignUp, "Facebook login canceled", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onError(error: FacebookException) {
+                Toast.makeText(this@SignUp, "Facebook login error: ${error?.message}", Toast.LENGTH_SHORT).show()
+            }
+        })
+
+        // Handle the Facebook login result in onActivityResult
+        fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+            super.onActivityResult(requestCode, resultCode, data)
+            callbackManager.onActivityResult(requestCode, resultCode, data)
+        }
 
         // TextWatcher to monitor form fields
         val textWatcher = object : TextWatcher {
@@ -78,8 +159,10 @@ class SignUp : AppCompatActivity() {
         confirmPasswordEditText.addTextChangedListener(textWatcher)
 
         // Ensure password input is hidden initially
-        passwordEditText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        confirmPasswordEditText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        passwordEditText.inputType =
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        confirmPasswordEditText.inputType =
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
 
         // Eye Icon for password toggle
         eyeIconPassword.setOnClickListener {
@@ -91,9 +174,9 @@ class SignUp : AppCompatActivity() {
             togglePasswordVisibility(confirmPasswordEditText, eyeIconConfirmPassword)
         }
 
-        // Sign-Up Button Click Listener
+        // Sign-Up Button Click Listener (Email/Password sign up)
         signUpButton.setOnClickListener {
-            val username = usernameEditText.text.toString() // Use usernameEditText here
+            val username = usernameEditText.text.toString()
             val email = emailEditText.text.toString()
             val password = passwordEditText.text.toString()
             val confirmPassword = confirmPasswordEditText.text.toString()
@@ -105,22 +188,19 @@ class SignUp : AppCompatActivity() {
             } else if (!isValidEmail(email)) {
                 Toast.makeText(this, "Invalid email format", Toast.LENGTH_SHORT).show()
             } else if (!isPasswordValid(password)) {
-                Toast.makeText(this, "Password does not meet the requirements", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Password does not meet the requirements", Toast.LENGTH_SHORT)
+                    .show()
             } else {
                 // Proceed with Firebase sign-up logic
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener(this) { task ->
                         if (task.isSuccessful) {
-                            // Get the user's UID
                             val userId = auth.currentUser?.uid
-
-                            // Create a user object to store in Firestore
                             val user = hashMapOf(
-                                "username" to username, // Save the username here
+                                "username" to username,
                                 "email" to email
                             )
 
-                            // Save the user information in Firestore under their UID
                             userId?.let {
                                 db.collection("users").document(it).set(user)
                                     .addOnSuccessListener {
@@ -161,20 +241,130 @@ class SignUp : AppCompatActivity() {
 
     // Password validation method
     private fun isPasswordValid(password: String): Boolean {
-        // Regular expression to check password criteria
-        val regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#\$%^&*(),.?\":{}|<>])[A-Za-z\\d!@#\$%^&*(),.?\":{}|<>]{8,}\$"
+        val regex =
+            "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#\$%^&*(),.?\":{}|<>])[A-Za-z\\d!@#\$%^&*(),.?\":{}|<>]{8,}\$"
         return password.matches(regex.toRegex())
     }
 
     // Toggle password visibility
     private fun togglePasswordVisibility(passwordEditText: EditText, eyeIcon: ImageView) {
         if (passwordEditText.inputType == InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD) {
-            passwordEditText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_NORMAL
+            passwordEditText.inputType =
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_NORMAL
             eyeIcon.setImageResource(R.drawable.openeye)
         } else {
-            passwordEditText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            passwordEditText.inputType =
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
             eyeIcon.setImageResource(R.drawable.eyeclosed)
         }
         passwordEditText.setSelection(passwordEditText.text.length)
     }
-}
+
+    // Handle Google Sign-In result
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == RC_SIGN_IN) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                // Automatically populate email field with Google email
+                val email = account?.email
+                findViewById<EditText>(R.id.emailField).setText(email)
+
+                // Prevent auto-login, just populate email and wait for the rest of the fields to be filled
+            } catch (e: ApiException) {
+                // Handle failed Google Sign-In
+                Toast.makeText(this, "Google Sign-In Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // Authenticate with Firebase using Google credentials
+    private fun firebaseAuthWithGoogle(account: GoogleSignInAccount?) {
+        if (account != null) {
+            val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+
+            // Perform Firebase authentication
+            auth.signInWithCredential(credential)
+                .addOnCompleteListener(this) { task ->
+                    if (task.isSuccessful) {
+                        val user = auth.currentUser
+                        val userId = user?.uid
+
+                        // Now, you need to store this user's data in Firestore
+                        if (userId != null) {
+                            val username = account.displayName ?: "New User"
+                            val email = account.email ?: "unknown@example.com"
+                            val user = hashMapOf(
+                                "username" to username,
+                                "email" to email
+                            )
+
+                            db.collection("users").document(userId).set(user)
+                                .addOnSuccessListener {
+                                    Toast.makeText(this, "Sign-up successful!", Toast.LENGTH_SHORT)
+                                        .show()
+                                    val intent = Intent(this, Dashboard::class.java)
+                                    startActivity(intent)
+                                    finish() // Finish this activity
+                                }
+                                .addOnFailureListener { exception ->
+                                    Toast.makeText(
+                                        this,
+                                        "Error saving user info: ${exception.message}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                        }
+                    } else {
+                        Toast.makeText(
+                            this,
+                            "Authentication Failed: ${task.exception?.message}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+        }
+
+    }            // Authenticate with Firebase using Facebook credentials
+            private fun firebaseAuthWithFacebook(accessToken: AccessToken?) {
+                if (accessToken != null) {
+                    val credential = FacebookAuthProvider.getCredential(accessToken.token)
+
+                    // Perform Firebase authentication
+                    auth.signInWithCredential(credential)
+                        .addOnCompleteListener(this) { task ->
+                            if (task.isSuccessful) {
+                                val user = auth.currentUser
+                                val userId = user?.uid
+
+                                // Store user data in Firestore
+                                userId?.let {
+                                    val username = user.displayName ?: "New User"
+                                    val email = user.email ?: "unknown@example.com"
+                                    val user = hashMapOf(
+                                        "username" to username,
+                                        "email" to email
+                                    )
+
+                                    db.collection("users").document(userId).set(user)
+                                        .addOnSuccessListener {
+                                            Toast.makeText(this, "Sign-up successful!", Toast.LENGTH_SHORT).show()
+                                            val intent = Intent(this, Dashboard::class.java)
+                                            startActivity(intent)
+                                            finish() // Finish this activity
+                                        }
+                                        .addOnFailureListener { exception ->
+                                            Toast.makeText(this, "Error saving user info: ${exception.message}", Toast.LENGTH_SHORT).show()
+                                        }
+                                }
+                            } else {
+                                Toast.makeText(this, "Authentication Failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                }
+            }
+
+        }
+

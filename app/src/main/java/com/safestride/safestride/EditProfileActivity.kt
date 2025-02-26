@@ -40,6 +40,9 @@ class EditProfileActivity : AppCompatActivity() {
         sharedPreferences = getSharedPreferences("UserProfileData_${FirebaseAuth.getInstance().currentUser?.uid}", MODE_PRIVATE)
         db = FirebaseFirestore.getInstance()
 
+        // Fetch and display the username in the navigation drawer
+        fetchUsernameFromFirestore()
+
         val editLayout = findViewById<RelativeLayout>(R.id.edit)
         ViewCompat.setOnApplyWindowInsetsListener(editLayout) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -140,19 +143,22 @@ class EditProfileActivity : AppCompatActivity() {
         }
     }
 
+
+    // Function to fetch username from Firestore and display it in the navigation drawer
     private fun fetchUsernameFromFirestore() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
         if (userId != null) {
             db.collection("users").document(userId).get()
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
-                        val fullName = document.getString("fullName")
-                        if (!fullName.isNullOrEmpty()) {
-                            userNameTextView.text = fullName
+                        val username = document.getString("username")
+                        if (!username.isNullOrEmpty()) {
+                            // Fetch the navigation header view
+                            val navigationHeaderView = navigationView.getHeaderView(0)
 
-                            val editor = sharedPreferences.edit()
-                            editor.putString("fullName", fullName)
-                            editor.apply()
+                            // Find the TextView in the header and set the username
+                            val headerUsernameTextView = navigationHeaderView?.findViewById<TextView>(R.id.usernameTextView)
+                            headerUsernameTextView?.text = username // Update the username in the drawer header
                         }
                     }
                 }
@@ -161,7 +167,6 @@ class EditProfileActivity : AppCompatActivity() {
                 }
         }
     }
-
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_EDIT_PROFILE && resultCode == RESULT_OK) {

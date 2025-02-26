@@ -6,17 +6,21 @@ import android.util.Log
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.CalendarView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import java.text.SimpleDateFormat
+import java.util.*
 
 class Reminder : AppCompatActivity() {
 
@@ -39,9 +43,20 @@ class Reminder : AppCompatActivity() {
             insets
         }
 
+        // Find TextView
+        val dateTextView = findViewById<TextView>(R.id.dateText)
+
+        // Get the current date
+        val sdf = SimpleDateFormat("MMMM dd", Locale.getDefault()) // Example: "February 25"
+        val currentDate = sdf.format(Date())
+
+        // Set the current date to TextView
+        dateTextView.text = currentDate
+
         // RecyclerView Setup
         recyclerView = findViewById(R.id.recyclerReminders)
-        recyclerView.layoutManager = GridLayoutManager(this, 2)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+
 
         // Adapter Setup
         adapter = ReminderAdapter(remindersList) { deleteReminderFromFirestore(it) }

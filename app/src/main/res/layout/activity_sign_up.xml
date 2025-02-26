@@ -190,6 +190,68 @@
                 android:padding="1dp"
                 android:onClick="onSignUpClick"/>  <!-- Set the onClick function -->
 
+            <!-- Divider with "Or Log In with" -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="30dp"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginStart="40dp"
+                android:layout_marginEnd="40dp">
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="1dp"
+                    android:background="@android:color/white"/>
+
+                <TextView
+                    android:id="@+id/orLoginWithText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Or Sign Up with"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    android:layout_marginHorizontal="10dp"/>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="1dp"
+                    android:background="@android:color/white"/>
+            </LinearLayout>
+
+            <!-- Facebook and Google Icons -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <ImageView
+                    android:id="@+id/facebookLogin"
+                    android:layout_width="40dp"
+                    android:layout_height="50dp"
+                    android:layout_marginEnd="30dp"
+                    android:src="@drawable/facebook"
+                    android:contentDescription="Facebook Login"
+                    android:clickable="true"
+                    android:focusable="true"/>
+
+                <ImageView
+                    android:id="@+id/googleLogin"
+                    android:layout_width="38dp"
+                    android:layout_height="50dp"
+                    android:src="@drawable/google"
+                    android:contentDescription="Google Login"
+                    android:clickable="true"
+                    android:focusable="true"/>
+            </LinearLayout>
+
+
             <!-- "Already have an account? Log In" text below the Sign Up button -->
             <TextView
                 android:id="@+id/loginText"
@@ -198,7 +260,7 @@
                 android:text="Already have an account? Log In"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
-                android:layout_marginTop="50dp"
+                android:layout_marginTop="20dp"
                 android:layout_centerHorizontal="true"
                 android:clickable="true"
                 android:focusable="true"

@@ -4,16 +4,14 @@
     android:id="@+id/login"
     android:background="#000B7E">
 
-    <!-- Visible Header with Back Arrow -->
+    <!-- Header with Back Arrow -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:orientation="horizontal"
         android:padding="7dp"
-        android:visibility="visible"
         android:id="@+id/header">
 
-        <!-- Back Arrow Icon -->
         <ImageView
             android:id="@+id/backArrowIcon"
             android:layout_width="25dp"
@@ -37,14 +35,13 @@
         android:focusableInTouchMode="true"
         android:descendantFocusability="beforeDescendants">
 
-        <!-- Nested LinearLayout to hold all the content inside the ScrollView -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="20dp">
 
-            <!-- "Welcome" text -->
+            <!-- "Welcome" Text -->
             <TextView
                 android:id="@+id/welcomeText"
                 android:layout_width="wrap_content"
@@ -56,7 +53,7 @@
                 android:layout_marginTop="80dp"
                 android:layout_marginStart="20dp" />
 
-            <!-- "Back" text below "Welcome" text -->
+            <!-- "Back" Text -->
             <TextView
                 android:id="@+id/backText"
                 android:layout_width="wrap_content"
@@ -65,7 +62,6 @@
                 android:textColor="@android:color/darker_gray"
                 android:textSize="65sp"
                 android:textStyle="bold"
-                android:layout_below="@id/welcomeText"
                 android:layout_marginTop="10dp"
                 android:layout_marginStart="20dp" />
 
@@ -84,14 +80,14 @@
                 android:textColorHint="#4A4949"
                 android:textSize="16sp" />
 
+            <!-- Password Field with Eye Icon -->
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:layout_marginStart="40dp"
                 android:layout_marginEnd="40dp">
 
-                <!-- Password Field -->
                 <EditText
                     android:id="@+id/passwordField"
                     android:layout_width="match_parent"
@@ -104,7 +100,6 @@
                     android:textSize="16sp"
                     android:inputType="textPassword" />
 
-                <!-- Eye Icon for toggling password visibility -->
                 <ImageView
                     android:id="@+id/eyeIconPassword"
                     android:layout_width="24dp"
@@ -118,12 +113,27 @@
                     android:focusable="true" />
             </RelativeLayout>
 
-            <!-- Log In Button below the form -->
+            <!-- Forgot Password (Below Password Field, Right Aligned) -->
+            <TextView
+                android:id="@+id/forgotPasswordText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Forgot Password?"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:layout_marginTop="5dp"
+                android:layout_marginEnd="40dp"
+                android:layout_gravity="end"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="5dp"/>
+
+            <!-- Log In Button -->
             <Button
                 android:id="@+id/loginButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="40dp"
+                android:layout_marginTop="25dp"
                 android:layout_marginStart="90dp"
                 android:layout_marginEnd="90dp"
                 android:text="Log In"
@@ -131,21 +141,68 @@
                 android:textColor="@android:color/white"
                 android:padding="1dp" />
 
-            <TextView
-                android:id="@+id/forgotPasswordText"
+            <!-- Divider with "Or Log In with" -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="30dp"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginStart="40dp"
+                android:layout_marginEnd="40dp">
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="1dp"
+                    android:background="@android:color/white"/>
+
+                <TextView
+                    android:id="@+id/orLoginWithText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Or Log In with"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    android:layout_marginHorizontal="10dp"/>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="1dp"
+                    android:background="@android:color/white"/>
+            </LinearLayout>
+
+            <!-- Facebook and Google Icons -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Forgot Password?"
-                android:textColor="@android:color/white"
-                android:textSize="16sp"
-                android:layout_marginTop="30dp"
-                android:layout_centerHorizontal="true"
-                android:clickable="true"
-                android:focusable="true"
-                android:padding="10dp"
-                android:layout_gravity="center"/>
+                android:layout_gravity="center"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal"
+                android:gravity="center">
 
-            <!-- "Don't have an account yet? Sign Up" text below the Forgot Password text -->
+                <ImageView
+                    android:id="@+id/facebookLogin"
+                    android:layout_width="40dp"
+                    android:layout_height="50dp"
+                    android:layout_marginEnd="30dp"
+                    android:src="@drawable/facebook"
+                    android:contentDescription="Facebook Login"
+                    android:clickable="true"
+                    android:focusable="true"/>
+
+                <ImageView
+                    android:id="@+id/googleLogin"
+                    android:layout_width="38dp"
+                    android:layout_height="50dp"
+                    android:src="@drawable/google"
+                    android:contentDescription="Google Login"
+                    android:clickable="true"
+                    android:focusable="true"/>
+            </LinearLayout>
+
+            <!-- "Don't have an account? Sign Up" -->
             <TextView
                 android:id="@+id/signUpLinkText"
                 android:layout_width="wrap_content"
@@ -153,7 +210,7 @@
                 android:text="Don't have an account yet? Sign Up"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="15dp"
                 android:layout_centerHorizontal="true"
                 android:clickable="true"
                 android:focusable="true"

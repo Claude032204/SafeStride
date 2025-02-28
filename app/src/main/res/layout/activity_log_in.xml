@@ -173,33 +173,38 @@
                     android:background="@android:color/white"/>
             </LinearLayout>
 
-            <!-- Facebook and Google Icons -->
+            <!-- Google Sign Up Button with Google Icon and Text -->
             <LinearLayout
+                android:id="@+id/googleLoginn"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginTop="20dp"
                 android:orientation="horizontal"
-                android:gravity="center">
+                android:background="@drawable/googlebg"
+                android:gravity="center"
+                android:layout_gravity="center"
+                android:layout_marginTop="20dp">
 
+                <!-- Google Icon -->
                 <ImageView
-                    android:id="@+id/facebookLogin"
-                    android:layout_width="40dp"
-                    android:layout_height="50dp"
-                    android:layout_marginEnd="30dp"
-                    android:src="@drawable/facebook"
-                    android:contentDescription="Facebook Login"
-                    android:clickable="true"
-                    android:focusable="true"/>
-
-                <ImageView
-                    android:id="@+id/googleLogin"
-                    android:layout_width="38dp"
-                    android:layout_height="50dp"
+                    android:id="@+id/googleIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="40dp"
                     android:src="@drawable/google"
-                    android:contentDescription="Google Login"
-                    android:clickable="true"
-                    android:focusable="true"/>
+                    android:layout_marginStart="10dp"
+                    android:contentDescription="Google Icon"
+                    android:layout_gravity="center_vertical"/>
+
+                <!-- Sign Up with Google Text -->
+                <TextView
+                    android:id="@+id/googleSignUpText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sign Up with Google"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="10dp"
+                    android:layout_gravity="center_vertical"/>
             </LinearLayout>
 
             <!-- "Don't have an account? Sign Up" -->

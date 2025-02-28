@@ -6,6 +6,7 @@ import android.text.InputType
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -37,7 +38,7 @@ class LogIn : AppCompatActivity() {
         val forgotPasswordText: TextView = findViewById(R.id.forgotPasswordText)
         val signUpLinkText: TextView = findViewById(R.id.signUpLinkText)
         val eyeIconPassword: ImageView = findViewById(R.id.eyeIconPassword)
-        val googleSignInButton: ImageView = findViewById(R.id.googleLogin)  // Google Sign-In Button
+        val googleSignInButton: LinearLayout = findViewById(R.id.googleLoginn)  // Google Sign-In Button
 
         // Google Sign-In setup
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)

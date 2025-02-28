@@ -9,9 +9,15 @@ import android.util.Patterns
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.RelativeLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -20,15 +26,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.FirebaseUser
-import com.facebook.FacebookSdk
-import com.facebook.appevents.AppEventsLogger
-import com.facebook.login.LoginManager
-import com.facebook.login.LoginResult
-import com.facebook.CallbackManager
-import com.facebook.FacebookCallback
-import com.facebook.FacebookException
-import com.facebook.AccessToken
-import com.google.firebase.auth.FacebookAuthProvider
 
 
 class SignUp : AppCompatActivity() {
@@ -40,15 +37,14 @@ class SignUp : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Initialize Facebook SDK with the Client Token
-        FacebookSdk.setClientToken(getString(R.string.facebook_client_token))
-        FacebookSdk.sdkInitialize(applicationContext)
-        AppEventsLogger.activateApp(application)
         setContentView(R.layout.activity_sign_up)
 
-        // Initialize Facebook SDK
-        FacebookSdk.sdkInitialize(applicationContext)
-        AppEventsLogger.activateApp(application)
+        findViewById<ScrollView>(R.id.scrollsign)
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.scrollsign)) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
 
         // Initialize Firebase Auth and Firestore
         auth = FirebaseAuth.getInstance()
@@ -64,8 +60,7 @@ class SignUp : AppCompatActivity() {
         val eyeIconPassword: ImageView = findViewById(R.id.eyeIconPassword)
         val eyeIconConfirmPassword: ImageView = findViewById(R.id.eyeIconConfirmPassword)
         val passwordRequirementsText: TextView = findViewById(R.id.passwordRequirementsText)
-        val googleSignUpButton: ImageView = findViewById(R.id.googleLogin) // Google Sign-Up Button
-        val facebookSignUpButton: ImageView = findViewById(R.id.facebookLogin) // Facebook Sign-Up Button
+        val googleSignUpButton: LinearLayout = findViewById(R.id.googleLogin) // Google Sign-Up Button
 
         // Check if the email field has been passed from the login screen (Google Sign-In)
         val email = intent.getStringExtra("email")
@@ -90,37 +85,6 @@ class SignUp : AppCompatActivity() {
                     val signInIntent = googleSignInClient.signInIntent
                     startActivityForResult(signInIntent, RC_SIGN_IN)
                 }
-        }
-
-        // Facebook login button setup
-        val callbackManager = CallbackManager.Factory.create()
-
-        // Facebook Sign-Up Button Click Listener
-        facebookSignUpButton.setOnClickListener {
-            LoginManager.getInstance().logInWithReadPermissions(this, listOf("email", "public_profile"))
-        }
-
-        // Register the callback for Facebook login
-        LoginManager.getInstance().registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
-            override fun onSuccess(result: LoginResult) {
-                val accessToken = result?.accessToken
-                // Authenticate with Firebase using the Facebook token
-                firebaseAuthWithFacebook(accessToken)
-            }
-
-            override fun onCancel() {
-                Toast.makeText(this@SignUp, "Facebook login canceled", Toast.LENGTH_SHORT).show()
-            }
-
-            override fun onError(error: FacebookException) {
-                Toast.makeText(this@SignUp, "Facebook login error: ${error?.message}", Toast.LENGTH_SHORT).show()
-            }
-        })
-
-        // Handle the Facebook login result in onActivityResult
-        fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-            super.onActivityResult(requestCode, resultCode, data)
-            callbackManager.onActivityResult(requestCode, resultCode, data)
         }
 
         // TextWatcher to monitor form fields
@@ -326,45 +290,5 @@ class SignUp : AppCompatActivity() {
                     }
                 }
         }
-
-    }            // Authenticate with Firebase using Facebook credentials
-            private fun firebaseAuthWithFacebook(accessToken: AccessToken?) {
-                if (accessToken != null) {
-                    val credential = FacebookAuthProvider.getCredential(accessToken.token)
-
-                    // Perform Firebase authentication
-                    auth.signInWithCredential(credential)
-                        .addOnCompleteListener(this) { task ->
-                            if (task.isSuccessful) {
-                                val user = auth.currentUser
-                                val userId = user?.uid
-
-                                // Store user data in Firestore
-                                userId?.let {
-                                    val username = user.displayName ?: "New User"
-                                    val email = user.email ?: "unknown@example.com"
-                                    val user = hashMapOf(
-                                        "username" to username,
-                                        "email" to email
-                                    )
-
-                                    db.collection("users").document(userId).set(user)
-                                        .addOnSuccessListener {
-                                            Toast.makeText(this, "Sign-up successful!", Toast.LENGTH_SHORT).show()
-                                            val intent = Intent(this, Dashboard::class.java)
-                                            startActivity(intent)
-                                            finish() // Finish this activity
-                                        }
-                                        .addOnFailureListener { exception ->
-                                            Toast.makeText(this, "Error saving user info: ${exception.message}", Toast.LENGTH_SHORT).show()
-                                        }
-                                }
-                            } else {
-                                Toast.makeText(this, "Authentication Failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                }
-            }
-
-        }
-
+    }
+}

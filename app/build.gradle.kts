@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
 
+
 }
 
 android {
@@ -46,6 +47,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.play.services.wearable)
     implementation(libs.volley)
+    implementation(libs.firebase.database)
     // Play Services Auth (for authentication features)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -66,5 +68,6 @@ dependencies {
 
 
 
-
 }
+
+

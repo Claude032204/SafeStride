@@ -117,7 +117,7 @@ class Settings : AppCompatActivity() {
         // View Last Location (Google Maps) button
         buttonViewLastKnownLocation.setOnClickListener {
             if (switchGpsTracking.isChecked) {
-                startActivity(Intent(this, MapsActivity::class.java))
+                showPasswordConfirmationDialogForGps()
             } else {
                 Toast.makeText(this, "Enable GPS Tracking first!", Toast.LENGTH_SHORT).show()
             }
@@ -424,4 +424,67 @@ class Settings : AppCompatActivity() {
         }
     }
 
+    // 🔹 Method to trigger password confirmation for GPS access
+    private fun showPasswordConfirmationDialogForGps() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_confirm_password, null)
+        val passwordInput = dialogView.findViewById<EditText>(R.id.passwordInput)
+        val confirmPasswordInput = dialogView.findViewById<EditText>(R.id.confirmPasswordInput)
+        val eyeIconPassword = dialogView.findViewById<ImageView>(R.id.eyeIconPassword)
+        val eyeIconConfirmPassword = dialogView.findViewById<ImageView>(R.id.eyeIconConfirmPassword)
+
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Confirm Password")
+        builder.setView(dialogView)
+
+        builder.setPositiveButton("Confirm") { _, _ ->
+
+            val password = passwordInput.text.toString().trim()
+            val confirmPassword = confirmPasswordInput.text.toString().trim()
+
+            if (password.isEmpty() || confirmPassword.isEmpty()) {
+                Toast.makeText(this, "Please enter your password", Toast.LENGTH_SHORT).show()
+                return@setPositiveButton
+            }
+
+            if (password != confirmPassword) {
+                Toast.makeText(this, "Passwords do not match!", Toast.LENGTH_SHORT).show()
+                return@setPositiveButton
+            }
+
+            // Authenticate the password with Firebase
+            authenticatePasswordForGps(password)
+        }
+
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            dialog.dismiss()
+        }
+
+        val alertDialog = builder.create()
+        alertDialog.show()
+
+        eyeIconPassword.setOnClickListener {
+            togglePasswordVisibility(passwordInput, eyeIconPassword)
+        }
+
+        eyeIconConfirmPassword.setOnClickListener {
+            togglePasswordVisibility(confirmPasswordInput, eyeIconConfirmPassword)
+        }
+    }
+
+    // Function to authenticate the password for GPS access
+    private fun authenticatePasswordForGps(password: String) {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null && user.email != null) {
+            val credential = EmailAuthProvider.getCredential(user.email!!, password)
+
+            user.reauthenticate(credential)
+                .addOnSuccessListener {
+                    // If password is correct, allow the user to view maps
+                    startActivity(Intent(this, MapsActivity::class.java))
+                }
+                .addOnFailureListener {
+                    Toast.makeText(this, "Incorrect password. Please try again.", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
 }

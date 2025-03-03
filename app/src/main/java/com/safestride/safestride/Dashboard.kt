@@ -3,6 +3,10 @@ package com.safestride.safestride
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.CountDownTimer
+import android.util.Log
 import android.view.MenuItem
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -25,6 +29,12 @@ class Dashboard : AppCompatActivity() {
     private lateinit var usernameTextView: TextView
 
     private val db = FirebaseFirestore.getInstance()
+
+    // Inactivity timer
+    private lateinit var handler: Handler
+    private lateinit var runnable: Runnable
+    private val inactivityTimeout: Long = 60000 // 1 minute of inactivity
+    private val countdownTimeout: Long = 30000 // 30 seconds countdown dialog
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -113,31 +123,81 @@ class Dashboard : AppCompatActivity() {
         if (userId != null) {
             fetchUsernameFromFirestore(userId)
         }
+
+        // Initialize the handler and runnable for inactivity timeout
+        handler = Handler(Looper.getMainLooper())
+        runnable = Runnable {
+            showInactivityDialog() // Show the countdown dialog if inactivity timeout is reached
+        }
+
+        // Start inactivity timer
+        startInactivityTimer()
+
+        // Set up user activity listeners
+        setUserActivityListener()
     }
 
-    // Function to fetch username from Firestore and display it in the profile section
+    private fun setUserActivityListener() {
+        // Detect user actions and reset inactivity timer
+        val mainLayout = findViewById<LinearLayout>(R.id.main)
+        mainLayout.setOnClickListener {
+            resetInactivityTimer() // Reset timer on user click
+        }
+    }
+
+    // Reset the inactivity timer after the user interacts or dismisses the dialog
+    fun resetInactivityTimer() {
+        handler.removeCallbacks(runnable)  // Remove any existing inactivity timers
+        startInactivityTimer() // Start a new inactivity timer
+    }
+
+
+    private fun startInactivityTimer() {
+        handler.postDelayed(runnable, inactivityTimeout) // Set inactivity timeout for 1 minute
+    }
+
+    private fun showInactivityDialog() {
+        // Check if the dialog is already showing, if it is, we hide it and show it again
+        val existingDialog = supportFragmentManager.findFragmentByTag("InactivityDialog")
+
+        if (existingDialog == null) {
+            // If dialog is not in the FragmentManager, create and show it
+            val dialog = CountdownDialogFragment(countdownTimeout) { timedOut ->
+                if (timedOut) {
+                    logoutUser()  // Log the user out after the countdown finishes
+                }
+            }
+
+            // Pass the callback to reset the inactivity timer after the dialog is dismissed
+            dialog.setOnDialogDismissedListener {
+                resetInactivityTimer()  // Reset inactivity timer when dialog is dismissed
+            }
+
+            dialog.show(supportFragmentManager, "InactivityDialog")
+        } else {
+            // If the dialog already exists, just show it again without adding/removing it
+            if (existingDialog.isHidden) {
+                // Show the dialog again if it was hidden previously
+                supportFragmentManager.beginTransaction().show(existingDialog).commit()
+            }
+        }
+    }
+
+
     private fun fetchUsernameFromFirestore(userId: String) {
         db.collection("users").document(userId).get()
             .addOnSuccessListener { document ->
                 if (document.exists()) {
-                    val username =
-                        document.getString("username") // Ensure that "username" field is correct in Firestore
+                    val username = document.getString("username")
                     if (!username.isNullOrEmpty()) {
-                        // Set the username in the TextView
                         usernameTextView.text = username
-                    } else {
-                        Toast.makeText(this, "No Username Set", Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     Toast.makeText(this, "No user data found", Toast.LENGTH_SHORT).show()
                 }
             }
             .addOnFailureListener { exception ->
-                Toast.makeText(
-                    this,
-                    "Error fetching username: ${exception.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this, "Error fetching username: ${exception.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -150,16 +210,11 @@ class Dashboard : AppCompatActivity() {
                 if (isGpsEnabled) {
                     startActivity(Intent(this, MapsActivity::class.java))
                 } else {
-                    Toast.makeText(
-                        this,
-                        "Enable GPS Tracking in Settings first!",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this, "Enable GPS Tracking in Settings first!", Toast.LENGTH_SHORT).show()
                 }
             }
-
             R.id.nav_about -> startActivity(Intent(this, About::class.java))
-            R.id.nav_sign_out -> logoutUser() // Handle sign out
+            R.id.nav_sign_out -> logoutUser()
         }
     }
 

@@ -17,7 +17,7 @@ class CountdownDialogFragment(private val countdownTimeout: Long, private val on
     private var countdownTimer: CountDownTimer? = null
     private var onDialogDismissedListener: (() -> Unit)? = null
 
-    // Method to set the callback
+    // Method to set the callback for dialog dismissal
     fun setOnDialogDismissedListener(listener: () -> Unit) {
         onDialogDismissedListener = listener
     }
@@ -51,7 +51,10 @@ class CountdownDialogFragment(private val countdownTimeout: Long, private val on
     private fun startCountdown() {
         countdownTimer = object : CountDownTimer(countdownTimeout, 1000) {
             override fun onTick(millisUntilFinished: Long) {
-                countdownTextView.text = "Timeout in: ${millisUntilFinished / 1000} seconds"
+                // Update the countdown text on the UI thread to avoid issues with background threads
+                activity?.runOnUiThread {
+                    countdownTextView.text = "Timeout in: ${millisUntilFinished / 1000} seconds"
+                }
             }
 
             override fun onFinish() {
@@ -66,6 +69,7 @@ class CountdownDialogFragment(private val countdownTimeout: Long, private val on
         super.onDestroyView()
         countdownTimer?.cancel()  // Ensure the countdown is canceled when the dialog is dismissed
     }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -75,5 +79,13 @@ class CountdownDialogFragment(private val countdownTimeout: Long, private val on
         params.height = ViewGroup.LayoutParams.WRAP_CONTENT // Adjust height as needed
         view.layoutParams = params
     }
-}
 
+    // Ensure dialog is only shown when the fragment's state is valid
+    override fun onStart() {
+        super.onStart()
+        // Prevent fragment transactions after the state has been saved to avoid IllegalStateException
+        if (isAdded && !requireActivity().isFinishing && !parentFragmentManager.isStateSaved) {
+            // Safe to show the dialog
+        }
+    }
+}

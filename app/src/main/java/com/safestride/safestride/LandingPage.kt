@@ -1,6 +1,6 @@
 package com.safestride.safestride
 
-import android.Manifest
+import android.animation.ValueAnimator
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.RelativeLayout
+import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -38,6 +39,11 @@ class LandingPage : AppCompatActivity() {
         // ✅ Always Fetch & Store FCM Token
         fetchAndSaveFCMToken()
 
+        // Initialize and set the typing animation
+        val taglineText = findViewById<TextView>(R.id.taglineText)
+        val fullText = "Ensuring safety and support with every step, SafeStride connects PWDs and caregivers in real time"
+        startTypingAnimation(taglineText, fullText)
+
         // Log In Button Click Listener
         findViewById<Button>(R.id.loginButton).setOnClickListener {
             val intent = Intent(this, LogIn::class.java)
@@ -54,11 +60,11 @@ class LandingPage : AppCompatActivity() {
     // 🔹 **Request Notification Permission for Android 13+**
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED
             ) {
                 ActivityCompat.requestPermissions(
-                    this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101
+                    this, arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101
                 )
             }
         }
@@ -107,5 +113,17 @@ class LandingPage : AppCompatActivity() {
                 Log.w("FCM", "Notification permission denied!")
             }
         }
+    }
+
+    // 🔹 **Start Typing Animation for the Tagline Text**
+    private fun startTypingAnimation(taglineText: TextView, fullText: String) {
+        // Create a ValueAnimator that updates the TextView's text gradually
+        val animator = ValueAnimator.ofInt(0, fullText.length)
+        animator.duration = 3000  // Duration of the typing effect (in milliseconds)
+        animator.addUpdateListener { animation ->
+            val value = animation.animatedValue as Int
+            taglineText.text = fullText.substring(0, value)
+        }
+        animator.start()
     }
 }

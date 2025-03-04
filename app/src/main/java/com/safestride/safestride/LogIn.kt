@@ -9,6 +9,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -24,6 +25,7 @@ class LogIn : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
 
     private val RC_SIGN_IN = 9001  // Request code for Google Sign-In
+    private var emailFromGoogle: String? = null  // Store the email after Google sign-in
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,9 +51,11 @@ class LogIn : AppCompatActivity() {
         val googleSignInClient = GoogleSignIn.getClient(this, gso)
 
         googleSignInButton.setOnClickListener {
-            // Initiate Google Sign-In flow
-            val signInIntent = googleSignInClient.signInIntent
-            startActivityForResult(signInIntent, RC_SIGN_IN)
+            // Always sign out before starting the sign-in process, this ensures account selection is always shown
+            googleSignInClient.signOut().addOnCompleteListener {
+                val signInIntent = googleSignInClient.signInIntent
+                startActivityForResult(signInIntent, RC_SIGN_IN)
+            }
         }
 
         // Log In Button Click Listener (Email/Password Login)
@@ -143,17 +147,6 @@ class LogIn : AppCompatActivity() {
         }
     }
 
-    // Check if the user is already logged in and navigate to Dashboard automatically if so
-    override fun onStart() {
-        super.onStart()
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
-            val intent = Intent(this, Dashboard::class.java)
-            startActivity(intent)
-            finish()
-        }
-    }
-
     // Handle Google Sign-In result
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -183,10 +176,8 @@ class LogIn : AppCompatActivity() {
                             db.collection("users").document(userId).get()
                                 .addOnSuccessListener { document ->
                                     if (document.exists()) {
-                                        // User exists, proceed to Dashboard
-                                        val intent = Intent(this, Dashboard::class.java)
-                                        startActivity(intent)
-                                        finish()
+                                        // User exists, show verification dialog
+                                        showVerificationDialog(account.email ?: "")
                                     } else {
                                         // User not found in Firestore, prompt for registration
                                         Toast.makeText(
@@ -214,5 +205,33 @@ class LogIn : AppCompatActivity() {
                     }
                 }
         }
+    }
+
+    // Function to show the verification dialog
+    private fun showVerificationDialog(email: String) {
+        // Static code simulation
+        val dialogBuilder = AlertDialog.Builder(this)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_verification, null)
+
+        val verificationCodeEditText = dialogView.findViewById<EditText>(R.id.verificationCodeEditText)
+        val verifyButton = dialogView.findViewById<Button>(R.id.verifyButton)
+
+        dialogBuilder.setView(dialogView)
+        val dialog = dialogBuilder.create()
+
+        // Set the "Verify" button logic
+        verifyButton.setOnClickListener {
+            val enteredCode = verificationCodeEditText.text.toString()
+            if (enteredCode == "123456") {  // Static code for simulation
+                dialog.dismiss() // Close the dialog
+                val intent = Intent(this, Dashboard::class.java)
+                startActivity(intent)
+                finish() // Navigate to Dashboard
+            } else {
+                Toast.makeText(this, "Invalid code, please try again.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        dialog.show()
     }
 }

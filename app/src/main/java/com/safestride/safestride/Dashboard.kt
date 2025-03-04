@@ -151,37 +151,47 @@ class Dashboard : AppCompatActivity() {
         startInactivityTimer() // Start a new inactivity timer
     }
 
-
     private fun startInactivityTimer() {
         handler.postDelayed(runnable, inactivityTimeout) // Set inactivity timeout for 1 minute
     }
 
     private fun showInactivityDialog() {
-        // Check if the dialog is already showing, if it is, we hide it and show it again
-        val existingDialog = supportFragmentManager.findFragmentByTag("InactivityDialog")
+        // Check if the activity is not finishing or destroyed
+        if (!isFinishing && !isDestroyed) {
+            // Ensure that we only show the dialog if the fragment manager is in a valid state
+            val existingDialog = supportFragmentManager.findFragmentByTag("InactivityDialog")
 
-        if (existingDialog == null) {
-            // If dialog is not in the FragmentManager, create and show it
-            val dialog = CountdownDialogFragment(countdownTimeout) { timedOut ->
-                if (timedOut) {
-                    logoutUser()  // Log the user out after the countdown finishes
+            // Check if dialog is already being shown
+            if (existingDialog == null) {
+                // Delay the dialog show action until the activity is in a valid state
+                if (!isFinishing && !isDestroyed) {
+                    val dialog = CountdownDialogFragment(countdownTimeout) { timedOut ->
+                        if (timedOut) {
+                            logoutUser()  // Log the user out after the countdown finishes
+                        }
+                    }
+
+                    // Pass the callback to reset the inactivity timer after the dialog is dismissed
+                    dialog.setOnDialogDismissedListener {
+                        resetInactivityTimer()  // Reset inactivity timer when dialog is dismissed
+                    }
+
+                    // Use a fragment transaction to show the dialog fragment
+                    try {
+                        dialog.show(supportFragmentManager, "InactivityDialog")
+                    } catch (e: IllegalStateException) {
+                        Log.e("Dashboard", "Unable to show inactivity dialog: ${e.message}")
+                    }
                 }
-            }
-
-            // Pass the callback to reset the inactivity timer after the dialog is dismissed
-            dialog.setOnDialogDismissedListener {
-                resetInactivityTimer()  // Reset inactivity timer when dialog is dismissed
-            }
-
-            dialog.show(supportFragmentManager, "InactivityDialog")
-        } else {
-            // If the dialog already exists, just show it again without adding/removing it
-            if (existingDialog.isHidden) {
-                // Show the dialog again if it was hidden previously
-                supportFragmentManager.beginTransaction().show(existingDialog).commit()
+            } else {
+                // If the dialog already exists, just show it again if it was hidden previously
+                if (existingDialog.isHidden) {
+                    supportFragmentManager.beginTransaction().show(existingDialog).commit()
+                }
             }
         }
     }
+
 
 
     private fun fetchUsernameFromFirestore(userId: String) {

@@ -158,71 +158,7 @@
                 android:textColor="@android:color/white"
                 android:padding="1dp" />
 
-            <!-- Divider with "Or Log In with" -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="30dp"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:layout_marginStart="40dp"
-                android:layout_marginEnd="40dp">
 
-                <View
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="1dp"
-                    android:background="@android:color/white"/>
-
-                <TextView
-                    android:id="@+id/orLoginWithText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Or Log In with"
-                    android:textColor="@android:color/white"
-                    android:textSize="14sp"
-                    android:layout_marginHorizontal="10dp"/>
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="1dp"
-                    android:background="@android:color/white"/>
-            </LinearLayout>
-
-            <!-- Google Sign Up Button with Google Icon and Text -->
-            <LinearLayout
-                android:id="@+id/googleLoginn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:background="@drawable/googlebg"
-                android:gravity="center"
-                android:layout_gravity="center"
-                android:layout_marginTop="20dp">
-
-                <!-- Google Icon -->
-                <ImageView
-                    android:id="@+id/googleIcon"
-                    android:layout_width="24dp"
-                    android:layout_height="40dp"
-                    android:src="@drawable/google"
-                    android:layout_marginStart="10dp"
-                    android:contentDescription="Google Icon"
-                    android:layout_gravity="center_vertical"/>
-
-                <!-- Sign Up with Google Text -->
-                <TextView
-                    android:id="@+id/googleSignUpText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Sign Up with Google"
-                    android:textColor="@android:color/black"
-                    android:textSize="16sp"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginEnd="10dp"
-                    android:layout_gravity="center_vertical"/>
-            </LinearLayout>
 
             <!-- "Don't have an account? Sign Up" -->
             <TextView
@@ -232,7 +168,7 @@
                 android:text="Don't have an account yet? Sign Up"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
-                android:layout_marginTop="15dp"
+                android:layout_marginTop="20dp"
                 android:layout_centerHorizontal="true"
                 android:clickable="true"
                 android:focusable="true"

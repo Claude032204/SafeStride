@@ -2,30 +2,23 @@ package com.safestride.safestride
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.text.InputType
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
-import com.google.firebase.auth.GoogleAuthProvider
 
 class LogIn : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
-
-    private val RC_SIGN_IN = 9001  // Request code for Google Sign-In
-    private var emailFromGoogle: String? = null  // Store the email after Google sign-in
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,25 +33,7 @@ class LogIn : AppCompatActivity() {
         val forgotPasswordText: TextView = findViewById(R.id.forgotPasswordText)
         val signUpLinkText: TextView = findViewById(R.id.signUpLinkText)
         val eyeIconPassword: ImageView = findViewById(R.id.eyeIconPassword)
-        val googleSignInButton: LinearLayout = findViewById(R.id.googleLoginn)  // Google Sign-In Button
 
-        // Google Sign-In setup
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(getString(R.string.default_web_client_id)) // Add your web client ID here
-            .requestEmail()
-            .build()
-
-        val googleSignInClient = GoogleSignIn.getClient(this, gso)
-
-        googleSignInButton.setOnClickListener {
-            // Always sign out before starting the sign-in process, this ensures account selection is always shown
-            googleSignInClient.signOut().addOnCompleteListener {
-                val signInIntent = googleSignInClient.signInIntent
-                startActivityForResult(signInIntent, RC_SIGN_IN)
-            }
-        }
-
-        // Log In Button Click Listener (Email/Password Login)
         logInButton.setOnClickListener {
             val email = emailEditText.text.toString()
             val password = passwordEditText.text.toString()
@@ -72,35 +47,23 @@ class LogIn : AppCompatActivity() {
                 auth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener(this) { task ->
                         if (task.isSuccessful) {
-                            val userId = auth.currentUser?.uid
-                            if (userId != null) {
-                                db.collection("users").document(userId).get()
-                                    .addOnSuccessListener { document ->
-                                        if (document != null) {
-                                            val username = document.getString("username")
-                                            Toast.makeText(
-                                                this,
-                                                "Welcome, $username!",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                            val intent = Intent(this, Dashboard::class.java)
-                                            startActivity(intent)
-                                            finish()
-                                        } else {
-                                            Toast.makeText(
-                                                this,
-                                                "User data not found",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                    .addOnFailureListener { exception ->
-                                        Toast.makeText(
-                                            this,
-                                            "Error retrieving user data: ${exception.message}",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
+                            val currentUser = auth.currentUser
+
+                            // Force reload the user to get the latest status on email verification
+                            currentUser?.reload()?.addOnCompleteListener { reloadTask ->
+                                if (reloadTask.isSuccessful) {
+                                    // Send the verification email immediately after login
+                                    sendVerificationEmailAgain()
+
+                                    // Show verification card
+                                    showVerificationCard(currentUser)
+                                } else {
+                                    Toast.makeText(
+                                        this,
+                                        "Error verifying user data: ${reloadTask.exception?.message}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
                         } else {
                             Toast.makeText(
@@ -113,19 +76,16 @@ class LogIn : AppCompatActivity() {
             }
         }
 
-        // Sign Up Click Listener
         signUpLinkText.setOnClickListener {
             val intent = Intent(this, SignUp::class.java)
             startActivity(intent)
         }
 
-        // Forgot Password Click Listener
         forgotPasswordText.setOnClickListener {
             val intent = Intent(this, ForgotPassword::class.java)
             startActivity(intent)
         }
 
-        // Eye Icon Click Listener to toggle visibility of Password
         eyeIconPassword.setOnClickListener {
             if (passwordEditText.inputType == InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD) {
                 passwordEditText.inputType =
@@ -147,91 +107,79 @@ class LogIn : AppCompatActivity() {
         }
     }
 
-    // Handle Google Sign-In result
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == RC_SIGN_IN) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                // Now check if the user exists in Firestore
-                firebaseAuthWithGoogle(account)
-            } catch (e: ApiException) {
-                Toast.makeText(this, "Google Sign-In Failed: ${e.message}", Toast.LENGTH_SHORT)
-                    .show()
-            }
-        }
-    }
-
-    private fun firebaseAuthWithGoogle(account: GoogleSignInAccount?) {
-        if (account != null) {
-            val credential = GoogleAuthProvider.getCredential(account.idToken, null)
-            auth.signInWithCredential(credential)
-                .addOnCompleteListener(this) { task ->
-                    if (task.isSuccessful) {
-                        val user = auth.currentUser
-                        val userId = user?.uid
-                        if (userId != null) {
-                            db.collection("users").document(userId).get()
-                                .addOnSuccessListener { document ->
-                                    if (document.exists()) {
-                                        // User exists, show verification dialog
-                                        showVerificationDialog(account.email ?: "")
-                                    } else {
-                                        // User not found in Firestore, prompt for registration
-                                        Toast.makeText(
-                                            this,
-                                            "Account not found. Please sign up first.",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                        // Redirect to Sign-Up activity with the email pre-filled
-                                        val intent = Intent(this, SignUp::class.java)
-                                        intent.putExtra("email", account.email) // Pass the email to Sign-Up screen
-                                        startActivity(intent)
-                                        finish()
-                                    }
-                                }
-                                .addOnFailureListener { exception ->
-                                    Toast.makeText(this, "Error: ${exception.message}", Toast.LENGTH_SHORT).show()
-                                }
-                        }
-                    } else {
-                        Toast.makeText(
-                            this,
-                            "Authentication Failed: ${task.exception?.message}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-        }
-    }
-
-    // Function to show the verification dialog
-    private fun showVerificationDialog(email: String) {
-        // Static code simulation
-        val dialogBuilder = AlertDialog.Builder(this)
+    // Show a dialog informing the user to verify their email
+    private fun showVerificationCard(currentUser: FirebaseUser) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_verification, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)  // Prevent the user from closing it until they verify
+            .create()
 
-        val verificationCodeEditText = dialogView.findViewById<EditText>(R.id.verificationCodeEditText)
-        val verifyButton = dialogView.findViewById<Button>(R.id.verifyButton)
+        val confirmButton = dialogView.findViewById<Button>(R.id.confirmVerificationButton)
+        val generateLinkButton = dialogView.findViewById<Button>(R.id.generateVerificationLinkButton)
+        val timerTextView = dialogView.findViewById<TextView>(R.id.timerTextView)
 
-        dialogBuilder.setView(dialogView)
-        val dialog = dialogBuilder.create()
-
-        // Set the "Verify" button logic
-        verifyButton.setOnClickListener {
-            val enteredCode = verificationCodeEditText.text.toString()
-            if (enteredCode == "123456") {  // Static code for simulation
-                dialog.dismiss() // Close the dialog
-                val intent = Intent(this, Dashboard::class.java)
-                startActivity(intent)
-                finish() // Navigate to Dashboard
-            } else {
-                Toast.makeText(this, "Invalid code, please try again.", Toast.LENGTH_SHORT).show()
+        // Set up the timer (1 minute countdown)
+        val timer = object : CountDownTimer(60000, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                val secondsRemaining = millisUntilFinished / 1000
+                timerTextView.text = "Time remaining: $secondsRemaining sec"
             }
+
+            override fun onFinish() {
+                // When timer finishes, enable "Generate new verification link" button
+                generateLinkButton.isEnabled = true
+            }
+        }
+
+        timer.start()
+
+        // When the user confirms they have verified their email
+        confirmButton.setOnClickListener {
+            // Perform verification check before proceeding
+            checkEmailVerificationStatus(dialog)
+        }
+
+        // When the user requests a new verification link
+        generateLinkButton.setOnClickListener {
+            // Generate a new verification link after the timeout
+            sendVerificationEmailAgain()
         }
 
         dialog.show()
+    }
+
+    // Send the verification email again
+    private fun sendVerificationEmailAgain() {
+        val currentUser = auth.currentUser
+        currentUser?.sendEmailVerification()?.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                Toast.makeText(this, "Verification email sent again!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Failed to resend verification email: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // Check email verification status
+    private fun checkEmailVerificationStatus(dialog: AlertDialog) {
+        val currentUser = auth.currentUser
+        currentUser?.reload()?.addOnCompleteListener { reloadTask ->
+            if (reloadTask.isSuccessful) {
+                // Perform a check again after reload
+                if (currentUser.isEmailVerified) {
+                    // Email verified, allow user to go to the Dashboard
+                    val intent = Intent(this, Dashboard::class.java)
+                    startActivity(intent)
+                    finish()
+                    dialog.dismiss()
+                } else {
+                    // Email not verified yet, show message again
+                    Toast.makeText(this, "Please verify your email first.", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(this, "Failed to reload user data.", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }

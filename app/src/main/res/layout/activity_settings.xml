@@ -138,8 +138,8 @@
                         android:layout_height="wrap_content"
                         android:text="Reconnect to Watch"
                         android:onClick="onReconnectWatchClick"
-                        android:background="@drawable/buttonbg"
-                        android:textColor="#000F66"
+                        android:background="@drawable/loginbg"
+                        android:textColor="@color/white"
                         android:layout_marginEnd="40dp"
                         android:layout_marginStart="40dp"
                         />
@@ -183,8 +183,8 @@
                         android:layout_height="wrap_content"
                         android:text="View Last Known Location"
                         android:onClick="onViewLastKnownLocationClick"
-                        android:background="@drawable/buttonbg"
-                        android:textColor="#000F66"
+                        android:background="@drawable/loginbg"
+                        android:textColor="@color/white"
                         android:layout_marginEnd="40dp"
                         android:layout_marginStart="40dp"/>
                 </LinearLayout>
@@ -218,8 +218,8 @@
                         android:layout_height="wrap_content"
                         android:text="Edit Profile"
                         android:onClick="onEditProfileClick"
-                        android:background="@drawable/buttonbg"
-                        android:textColor="#000F66"
+                        android:background="@drawable/loginbg"
+                        android:textColor="@color/white"
                         android:layout_marginEnd="40dp"
                         android:layout_marginStart="40dp"
                         android:layout_marginBottom="10dp"/>
@@ -230,8 +230,8 @@
                         android:layout_height="wrap_content"
                         android:text="Change Password"
                         android:onClick="onChangePasswordClick"
-                        android:background="@drawable/buttonbg"
-                        android:textColor="#000F66"
+                        android:background="@drawable/loginbg"
+                        android:textColor="@color/white"
                         android:layout_marginEnd="40dp"
                         android:layout_marginStart="40dp"
                         android:layout_marginBottom="10dp"/>
@@ -242,8 +242,8 @@
                         android:layout_height="wrap_content"
                         android:text="Logout"
                         android:onClick="onLogoutClick"
-                        android:background="@drawable/buttonbg"
-                        android:textColor="#000F66"
+                        android:background="@drawable/loginbg"
+                        android:textColor="@color/white"
                         android:layout_marginEnd="40dp"
                         android:layout_marginStart="40dp"
                         android:layout_marginBottom="20dp"/>
@@ -254,7 +254,7 @@
                         android:layout_height="wrap_content"
                         android:text="Delete Account"
                         android:onClick="onDeleteAccountClick"
-                        android:background="@drawable/button_border"
+                        android:background="@drawable/loginbg"
                         android:textColor="#FF0000"
                         android:layout_marginEnd="40dp"
                         android:layout_marginStart="40dp"

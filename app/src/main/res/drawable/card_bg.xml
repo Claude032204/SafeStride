@@ -2,8 +2,7 @@
     <corners android:radius="10dp"/> <!-- Rounded Corners -->
     <gradient
         android:startColor="#C4FBFF"
-        android:endColor="#C4FBFF"
-        android:angle="4"/>
-    <stroke android:width="2dp" android:color="#000A43"/> <!-- Border -->
+        android:endColor="#9FDBF4"
+        />
     <padding android:left="10dp" android:top="10dp" android:right="10dp" android:bottom="10dp"/>
 </shape>

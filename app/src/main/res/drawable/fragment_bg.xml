@@ -4,6 +4,6 @@
         android:startColor="#FFF9F9"
         android:endColor="#FFFFFF"
         android:angle="4"/>
-    <stroke android:width="2dp" android:color="#ADB9F0"/> <!-- Border -->
+    <stroke android:width="2dp" android:color="#FDFDFD"/> <!-- Border -->
     <padding android:left="10dp" android:top="10dp" android:right="10dp" android:bottom="10dp"/>
 </shape>

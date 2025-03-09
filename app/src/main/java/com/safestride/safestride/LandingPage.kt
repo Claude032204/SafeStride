@@ -23,7 +23,6 @@ class LandingPage : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_landing_page)
 
         val landingLayout = findViewById<RelativeLayout>(R.id.landing)

@@ -27,7 +27,6 @@ class Note : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_note)
 
         val noteLayout = findViewById<RelativeLayout>(R.id.note)

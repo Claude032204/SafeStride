@@ -38,7 +38,6 @@ class Dashboard : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_dashboard)
 
         // Initialize SharedPreferences
@@ -47,6 +46,12 @@ class Dashboard : AppCompatActivity() {
         // Initialize DrawerLayout
         drawerLayout = findViewById(R.id.drawerLayout)
 
+        val mainLayout = findViewById<LinearLayout>(R.id.main)
+        ViewCompat.setOnApplyWindowInsetsListener(mainLayout) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
         // Set up WindowInsets for full-screen integration
         ViewCompat.setOnApplyWindowInsetsListener(drawerLayout) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -54,12 +59,8 @@ class Dashboard : AppCompatActivity() {
             insets
         }
 
-        val mainLayout = findViewById<LinearLayout>(R.id.main)
-        ViewCompat.setOnApplyWindowInsetsListener(mainLayout) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+
+
 
         // Handle Menu Icon Click
         val menuIcon: ImageView = findViewById(R.id.menuIcon)

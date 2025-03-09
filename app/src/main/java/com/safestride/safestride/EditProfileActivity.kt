@@ -34,7 +34,6 @@ class EditProfileActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_edit_profile)
 
         sharedPreferences = getSharedPreferences("UserProfileData_${FirebaseAuth.getInstance().currentUser?.uid}", MODE_PRIVATE)
@@ -43,8 +42,17 @@ class EditProfileActivity : AppCompatActivity() {
         // Fetch and display the username in the navigation drawer
         fetchUsernameFromFirestore()
 
+        // Handle system bar insets for the main content area
         val editLayout = findViewById<RelativeLayout>(R.id.edit)
         ViewCompat.setOnApplyWindowInsetsListener(editLayout) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+
+        // Handle system bar insets for the DrawerLayout
+        drawerLayout = findViewById(R.id.drawerLayout)
+        ViewCompat.setOnApplyWindowInsetsListener(drawerLayout) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
@@ -64,7 +72,6 @@ class EditProfileActivity : AppCompatActivity() {
             profileImageView.setImageURI(Uri.parse(profileImageUriString))
         }
 
-        drawerLayout = findViewById(R.id.drawerLayout)
         navigationView = findViewById(R.id.navigationView)
 
         val menuIcon: ImageView = findViewById(R.id.menuIcon)
@@ -143,7 +150,6 @@ class EditProfileActivity : AppCompatActivity() {
         }
     }
 
-
     // Function to fetch username from Firestore and display it in the navigation drawer
     private fun fetchUsernameFromFirestore() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
@@ -167,6 +173,7 @@ class EditProfileActivity : AppCompatActivity() {
                 }
         }
     }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_EDIT_PROFILE && resultCode == RESULT_OK) {

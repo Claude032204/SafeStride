@@ -19,7 +19,6 @@ class ForgotPassword : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_forgot_password)
 
         // Find the RelativeLayout by its ID

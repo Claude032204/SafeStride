@@ -58,8 +58,8 @@
         <Button
             android:id="@+id/loginButton"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:backgroundTint="#010E3A"
+            android:layout_height="wrap_content"
+            android:background="@drawable/loginbg"
             android:text="Log In"
             android:textColor="#EDEFFF"
             android:textStyle="bold"

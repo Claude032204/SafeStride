@@ -28,6 +28,7 @@ class ProfileEditActivity : AppCompatActivity() {
     private lateinit var calendarIcon: ImageView
     private lateinit var profileImageView: ImageView
     private lateinit var fullNameEditText: EditText
+    private lateinit var usernameEditText: EditText  // Added username field
     private lateinit var emailAddressEditText: EditText
     private lateinit var contactNumberEditText: EditText
     private lateinit var addressEditText: EditText
@@ -43,7 +44,6 @@ class ProfileEditActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_profile_edit)
 
         val profileLayout = findViewById<RelativeLayout>(R.id.profile)
@@ -60,6 +60,7 @@ class ProfileEditActivity : AppCompatActivity() {
         calendarIcon = findViewById(R.id.calendarIcon)
         profileImageView = findViewById(R.id.profileIcon)
         fullNameEditText = findViewById(R.id.fullNameEditText)
+        usernameEditText = findViewById(R.id.usernameEditText)  // Initialize the username field
         emailAddressEditText = findViewById(R.id.emailAddressEditText)
         contactNumberEditText = findViewById(R.id.contactNumberEditText)
         addressEditText = findViewById(R.id.addressEditText)
@@ -90,14 +91,17 @@ class ProfileEditActivity : AppCompatActivity() {
 
         saveButton.setOnClickListener {
             val fullName = fullNameEditText.text.toString()
-            saveUserDataToFirestore()
+            val username = usernameEditText.text.toString() // Get the username from EditText
+            saveUserDataToFirestore(fullName, username)  // Pass the username
 
             val editor = sharedPreferences.edit()
             editor.putString("fullName", fullName)
+            editor.putString("username", username)  // Save username locally
             editor.apply()
 
             val resultIntent = Intent().apply {
                 putExtra("updatedFullName", fullName)
+                putExtra("updatedUsername", username)  // Send updated username back
             }
             setResult(RESULT_OK, resultIntent)
             finish()
@@ -136,24 +140,25 @@ class ProfileEditActivity : AppCompatActivity() {
 
     private fun loadUserDataLocally() {
         fullNameEditText.setText(sharedPreferences.getString("fullName", ""))
+        usernameEditText.setText(sharedPreferences.getString("username", ""))  // Load username from sharedPreferences
         contactNumberEditText.setText(sharedPreferences.getString("contactNumber", ""))
         birthdateEditText.setText(sharedPreferences.getString("birthdate", ""))
         addressEditText.setText(sharedPreferences.getString("address", ""))
     }
 
-    private fun saveUserDataToFirestore() {
+    private fun saveUserDataToFirestore(fullName: String, username: String) {
         val user = FirebaseAuth.getInstance().currentUser
         if (user != null) {
             val userId = user.uid
-            val fullName = fullNameEditText.text.toString()
             val contactNumber = contactNumberEditText.text.toString()
             val birthdate = birthdateEditText.text.toString()
             val address = addressEditText.text.toString()
 
-            saveUserDataLocally(fullName, contactNumber, birthdate, address)
+            saveUserDataLocally(fullName, contactNumber, birthdate, address, username)
 
             val userData: MutableMap<String, Any> = hashMapOf(
                 "fullName" to fullName,
+                "username" to username,  // Add username to the data being saved
                 "contactNumber" to contactNumber,
                 "birthdate" to birthdate,
                 "address" to address
@@ -166,9 +171,10 @@ class ProfileEditActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveUserDataLocally(fullName: String, contactNumber: String, birthdate: String, address: String) {
+    private fun saveUserDataLocally(fullName: String, contactNumber: String, birthdate: String, address: String, username: String) {
         sharedPreferences.edit()
             .putString("fullName", fullName)
+            .putString("username", username)  // Save username locally
             .putString("contactNumber", contactNumber)
             .putString("birthdate", birthdate)
             .putString("address", address)
@@ -182,6 +188,7 @@ class ProfileEditActivity : AppCompatActivity() {
                 .addOnSuccessListener { documentSnapshot ->
                     if (documentSnapshot.exists()) {
                         fullNameEditText.setText(documentSnapshot.getString("fullName"))
+                        usernameEditText.setText(documentSnapshot.getString("username"))  // Set username
                         contactNumberEditText.setText(documentSnapshot.getString("contactNumber"))
                         birthdateEditText.setText(documentSnapshot.getString("birthdate"))
                         addressEditText.setText(documentSnapshot.getString("address"))

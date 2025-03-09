@@ -42,7 +42,6 @@ class Patient : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_patient)
 
         val patientLayout = findViewById<RelativeLayout>(R.id.patient)
@@ -84,13 +83,13 @@ class Patient : AppCompatActivity() {
         val genderOptions = arrayOf("Male", "Female")
         val genderAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, genderOptions)
         genderAutoCompleteTextView.setAdapter(genderAdapter)
-        genderAutoCompleteTextView.setThreshold(1) // filtering starts after 1 character
+        genderAutoCompleteTextView.threshold = 1 // filtering starts after 1 character
 
         // Set up AutoCompleteTextView for Blood Type with options
         val bloodTypeOptions = arrayOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
         val bloodTypeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, bloodTypeOptions)
         bloodTypeAutoCompleteTextView.setAdapter(bloodTypeAdapter)
-        bloodTypeAutoCompleteTextView.setThreshold(1)
+        bloodTypeAutoCompleteTextView.threshold = 1
 
         // Set up AutoCompleteTextView for Mobility Status with options
         val mobilityStatusOptions = arrayOf(
@@ -102,25 +101,25 @@ class Patient : AppCompatActivity() {
         )
         val mobilityStatusAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, mobilityStatusOptions)
         mobilityStatusAutoCompleteTextView.setAdapter(mobilityStatusAdapter)
-        mobilityStatusAutoCompleteTextView.setThreshold(1)
+        mobilityStatusAutoCompleteTextView.threshold = 1
 
         // Attach onClickListeners for dropdown icons to reset filter and show all options
         val genderDropdownIcon = findViewById<ImageView>(R.id.dropdownIcon)
         genderDropdownIcon.setOnClickListener {
-            (genderAutoCompleteTextView.adapter as? ArrayAdapter<String>)?.filter?.filter(null)
-            genderAutoCompleteTextView.showDropDown()
+            genderAutoCompleteTextView.requestFocus() // Ensure the AutoCompleteTextView gets focus
+            genderAutoCompleteTextView.showDropDown() // Show the dropdown
         }
 
         val bloodTypeDropdownIcon = findViewById<ImageView>(R.id.bloodTypeDropdownIcon)
         bloodTypeDropdownIcon.setOnClickListener {
-            (bloodTypeAutoCompleteTextView.adapter as? ArrayAdapter<String>)?.filter?.filter(null)
-            bloodTypeAutoCompleteTextView.showDropDown()
+            bloodTypeAutoCompleteTextView.requestFocus() // Ensure the AutoCompleteTextView gets focus
+            bloodTypeAutoCompleteTextView.showDropDown() // Show the dropdown
         }
 
         val mobilityStatusDropdownIcon = findViewById<ImageView>(R.id.mobilityStatusDropdownIcon)
         mobilityStatusDropdownIcon.setOnClickListener {
-            (mobilityStatusAutoCompleteTextView.adapter as? ArrayAdapter<String>)?.filter?.filter(null)
-            mobilityStatusAutoCompleteTextView.showDropDown()
+            mobilityStatusAutoCompleteTextView.requestFocus() // Ensure the AutoCompleteTextView gets focus
+            mobilityStatusAutoCompleteTextView.showDropDown() // Show the dropdown
         }
 
         // TextWatcher for fullNameEditText to update fullNameDisplay

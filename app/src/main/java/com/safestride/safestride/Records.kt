@@ -15,7 +15,6 @@ class Records : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_records)
 
         findViewById<RelativeLayout>(R.id.records)

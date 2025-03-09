@@ -26,7 +26,6 @@ class AssistanceLogs : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_assistance_logs)
 
         db = FirebaseFirestore.getInstance()

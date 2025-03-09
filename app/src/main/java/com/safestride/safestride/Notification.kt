@@ -25,7 +25,6 @@ class Notification : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_notification)
 
         val notificationLayout = findViewById<CoordinatorLayout>(R.id.notification)

@@ -1,13 +1,22 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.SafeStride" parent="Base.Theme.SafeStride">
-        <!-- Define the button background for the entire app -->
+    <!-- Theme for the entire application, extending AppCompat.Light but without the ActionBar -->
+    <style name="Theme.SafeStride" parent="Theme.AppCompat.Light.NoActionBar">
+
+        <!-- Set Status Bar color to your app's color (#000B7E) -->
+        <item name="android:statusBarColor">#000B7E</item> <!-- Dark Blue color for Status Bar -->
+        <item name="android:windowTranslucentStatus">false</item> <!-- Ensure Status Bar is not translucent -->
+
+        <!-- Set Navigation Bar color to your app's color (#000B7E) -->
+        <item name="android:navigationBarColor">#000B7E</item> <!-- Dark Blue color for Navigation Bar -->
+        <item name="android:windowTranslucentNavigation">false</item> <!-- Ensure Navigation Bar is not translucent -->
+
+        <!-- Prevent automatic dark mode on the Navigation Bar -->
+        <item name="android:forceDarkAllowed">false</item> <!-- Prevent dark mode for navigation bar -->
+
+        <!-- Set the window's background to match your app's color or transparency -->
+        <item name="android:windowBackground">#000B7E</item> <!-- Dark Blue background (same color as status/nav bar) -->
+
+        <!-- Reference to the button style defined in styles.xml -->
         <item name="android:buttonStyle">@style/CustomButtonStyle</item>
     </style>
-
-    <style name="CustomButtonStyle" parent="Widget.AppCompat.Button">
-        <item name="android:background">@drawable/bg_button</item> <!-- Reference to the white button drawable -->
-        <item name="android:textColor">#000000</item>  <!-- Black text for contrast -->
-    </style>
-
-
 </resources>

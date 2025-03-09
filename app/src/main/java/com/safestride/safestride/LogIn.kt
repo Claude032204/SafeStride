@@ -7,10 +7,14 @@ import android.text.InputType
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
@@ -107,7 +111,6 @@ class LogIn : AppCompatActivity() {
         }
     }
 
-    // Show a dialog informing the user to verify their email
     private fun showVerificationCard(currentUser: FirebaseUser) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_verification, null)
         val dialog = AlertDialog.Builder(this)
@@ -116,7 +119,8 @@ class LogIn : AppCompatActivity() {
             .create()
 
         val confirmButton = dialogView.findViewById<Button>(R.id.confirmVerificationButton)
-        val generateLinkButton = dialogView.findViewById<Button>(R.id.generateVerificationLinkButton)
+        val generateLinkButton =
+            dialogView.findViewById<Button>(R.id.generateVerificationLinkButton)
         val timerTextView = dialogView.findViewById<TextView>(R.id.timerTextView)
 
         // Set up the timer (1 minute countdown)
@@ -149,19 +153,6 @@ class LogIn : AppCompatActivity() {
         dialog.show()
     }
 
-    // Send the verification email again
-    private fun sendVerificationEmailAgain() {
-        val currentUser = auth.currentUser
-        currentUser?.sendEmailVerification()?.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                Toast.makeText(this, "Verification email sent again!", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Failed to resend verification email: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    // Check email verification status
     private fun checkEmailVerificationStatus(dialog: AlertDialog) {
         val currentUser = auth.currentUser
         currentUser?.reload()?.addOnCompleteListener { reloadTask ->
@@ -175,10 +166,30 @@ class LogIn : AppCompatActivity() {
                     dialog.dismiss()
                 } else {
                     // Email not verified yet, show message again
-                    Toast.makeText(this, "Please verify your email first.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Please verify your email first.", Toast.LENGTH_SHORT)
+                        .show()
+
+                    // Optionally, keep the user on the verification screen until they confirm verification.
+                    // Prevent further login until verified
+                    // You can add a check to make sure they verify the email before allowing them to continue.
                 }
             } else {
                 Toast.makeText(this, "Failed to reload user data.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun sendVerificationEmailAgain() {
+        val currentUser = auth.currentUser
+        currentUser?.sendEmailVerification()?.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                Toast.makeText(this, "Verification email sent again!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(
+                    this,
+                    "Failed to resend verification email: ${task.exception?.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }

@@ -17,7 +17,6 @@ class SetNewPassword : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_set_new_password)
 
         // Find the RelativeLayout by its ID

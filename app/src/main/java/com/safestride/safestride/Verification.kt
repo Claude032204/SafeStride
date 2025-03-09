@@ -27,7 +27,6 @@ class Verification : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_verification)
 
         // Find the RelativeLayout by its ID

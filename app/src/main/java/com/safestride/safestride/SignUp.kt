@@ -109,35 +109,42 @@ class SignUp : AppCompatActivity() {
                 Toast.makeText(this, "Password does not meet the requirements", Toast.LENGTH_SHORT)
                     .show()
             } else {
+                // Sign out any previously logged-in user
+                auth.signOut()
+
                 // Proceed with Firebase sign-up logic
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener(this) { task ->
                         if (task.isSuccessful) {
                             val userId = auth.currentUser?.uid
-                            val user = hashMapOf(
-                                "username" to username,
-                                "email" to email
-                            )
+                            if (userId != null) {
+                                val user = hashMapOf(
+                                    "username" to username,
+                                    "email" to email
+                                )
 
-                            // Send email verification
-                            val currentUser = auth.currentUser
-                            currentUser?.sendEmailVerification()?.addOnCompleteListener { verificationTask ->
-                                if (verificationTask.isSuccessful) {
-                                    // Show card that informs the user to check their email
-                                    showVerificationCard()
-                                } else {
-                                    Toast.makeText(this, "Failed to send verification email: ${verificationTask.exception?.message}", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-
-                            userId?.let {
-                                db.collection("users").document(it).set(user)
+                                // Save user data to Firestore
+                                db.collection("users").document(userId).set(user)
                                     .addOnSuccessListener {
-                                        // Don't redirect to the dashboard yet, wait for email verification
+                                        // Fetch the user data immediately after saving it
+                                        fetchUserData(userId)
                                     }
                                     .addOnFailureListener { exception ->
                                         Toast.makeText(this, "Error saving user info: ${exception.message}", Toast.LENGTH_SHORT).show()
                                     }
+
+                                // Send email verification
+                                val currentUser = auth.currentUser
+                                currentUser?.sendEmailVerification()?.addOnCompleteListener { verificationTask ->
+                                    if (verificationTask.isSuccessful) {
+                                        // Show card that informs the user to check their email
+                                        showVerificationCard()
+                                    } else {
+                                        Toast.makeText(this, "Failed to send verification email: ${verificationTask.exception?.message}", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            } else {
+                                Toast.makeText(this, "User ID is null, sign up failed.", Toast.LENGTH_SHORT).show()
                             }
                         } else {
                             Toast.makeText(this, "Sign-up failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
@@ -184,6 +191,23 @@ class SignUp : AppCompatActivity() {
             eyeIcon.setImageResource(R.drawable.eyeclosed)
         }
         passwordEditText.setSelection(passwordEditText.text.length)
+    }
+
+    // Fetch user data after sign-up
+    private fun fetchUserData(userId: String) {
+        db.collection("users").document(userId).get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val username = document.getString("username") ?: "Unknown"
+                    val email = document.getString("email") ?: "No email"
+                    Toast.makeText(this, "Welcome, $username! Email: $email", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "User data not found", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .addOnFailureListener { exception ->
+                Toast.makeText(this, "Failed to fetch user data: ${exception.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
     // Show a dialog informing the user to verify their email

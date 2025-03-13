@@ -195,14 +195,43 @@ class Patient : AppCompatActivity() {
                 .get()
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
-                        fullNameEditText.setText(document.getString("FullName"))
-                        fullNameDisplay.text = document.getString("FullName")
-                        birthdateEditText.setText(document.getString("Birthdate"))
-                        genderAutoCompleteTextView.setText(document.getString("Gender"))
-                        bloodTypeAutoCompleteTextView.setText(document.getString("BloodType"))
-                        mobilityStatusAutoCompleteTextView.setText(document.getString("MobilityStatus"))
-                        conditionEditText.setText(document.getString("Condition"))
-                        guardianEditText.setText(document.getString("Guardian"))
+                        val fullName = document.getString("FullName")
+                        val birthdate = document.getString("Birthdate")
+                        val gender = document.getString("Gender")
+                        val bloodType = document.getString("BloodType")
+                        val mobilityStatus = document.getString("MobilityStatus")
+                        val condition = document.getString("Condition")
+                        val guardian = document.getString("Guardian")
+
+                        // Set the values in the views
+                        fullNameEditText.setText(fullName)
+                        fullNameDisplay.text = fullName
+                        birthdateEditText.setText(birthdate)
+                        genderAutoCompleteTextView.setText(gender)
+                        bloodTypeAutoCompleteTextView.setText(bloodType)
+                        mobilityStatusAutoCompleteTextView.setText(mobilityStatus)
+                        conditionEditText.setText(condition)
+                        guardianEditText.setText(guardian)
+
+                        // Reset the adapters to show the full list of options
+                        val genderOptions = arrayOf("Male", "Female")
+                        val genderAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, genderOptions)
+                        genderAutoCompleteTextView.setAdapter(genderAdapter)
+
+                        val bloodTypeOptions = arrayOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
+                        val bloodTypeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, bloodTypeOptions)
+                        bloodTypeAutoCompleteTextView.setAdapter(bloodTypeAdapter)
+
+                        val mobilityStatusOptions = arrayOf(
+                            "Wheelchair User",
+                            "Walker/Crutches User",
+                            "Cane User",
+                            "Non-Ambulatory (Unable to Walk)",
+                            "Limited Mobility (Can Walk with Assistance or Devices)"
+                        )
+                        val mobilityStatusAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, mobilityStatusOptions)
+                        mobilityStatusAutoCompleteTextView.setAdapter(mobilityStatusAdapter)
+
                     } else {
                         Toast.makeText(this, "No profile data found", Toast.LENGTH_SHORT).show()
                     }

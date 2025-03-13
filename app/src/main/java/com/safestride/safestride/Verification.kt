@@ -4,12 +4,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.widget.Button
-import android.widget.EditText
 import android.widget.ImageView
 import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -19,7 +17,6 @@ class Verification : AppCompatActivity() {
 
     private lateinit var timerText: TextView
     private lateinit var resendCodeText: TextView
-    private lateinit var verificationCodeField: EditText
     private lateinit var confirmCodeButton: Button
     private var timer: CountDownTimer? = null
     private var timeLeftInMillis: Long = 60000  // 1 minute
@@ -55,8 +52,6 @@ class Verification : AppCompatActivity() {
         val verificationSentText: TextView = findViewById(R.id.verificationSentText)
         verificationSentText.text = "Verification sent to: $userEmail"
 
-        // Initialize views for verification code input and button
-        verificationCodeField = findViewById(R.id.verificationCodeField)
         confirmCodeButton = findViewById(R.id.confirmCodeButton)
         timerText = findViewById(R.id.timerText)
         resendCodeText = findViewById(R.id.resendCodeText)
@@ -72,12 +67,10 @@ class Verification : AppCompatActivity() {
 
         // Confirm Code Button click listener
         confirmCodeButton.setOnClickListener {
-            val code = verificationCodeField.text.toString()
-            if (code.isNullOrEmpty()) {
-                Toast.makeText(this, "Please enter the verification code", Toast.LENGTH_SHORT).show()
-            } else {
-                verifyResetCode(code)
-            }
+            // Always allow the user to go to the login page
+            val intent = Intent(this, LogIn::class.java)
+            startActivity(intent)
+            finish()  // End current activity
         }
     }
 
@@ -95,6 +88,7 @@ class Verification : AppCompatActivity() {
             override fun onFinish() {
                 timerText.text = "00:00"
                 resendCodeText.isClickable = true  // Enable the "Resend" text when timer finishes
+                resendCodeText.setTextColor(android.graphics.Color.WHITE)  // Set the text color to white to indicate it is clickable
             }
         }.start()
     }
@@ -109,8 +103,9 @@ class Verification : AppCompatActivity() {
     // Resend verification code logic
     private fun resendVerificationCode(email: String?) {
         if (!email.isNullOrEmpty()) {
-            auth.sendPasswordResetEmail(email)
-                .addOnCompleteListener { task ->
+            // Resend the email verification link
+            auth.currentUser?.sendEmailVerification()
+                ?.addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         Toast.makeText(this, "Verification email sent", Toast.LENGTH_SHORT).show()
                     } else {
@@ -118,21 +113,5 @@ class Verification : AppCompatActivity() {
                     }
                 }
         }
-    }
-
-    // Verify the password reset code entered by the user
-    private fun verifyResetCode(code: String) {
-        auth.verifyPasswordResetCode(code)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    // If the verification code is valid, proceed to the NewPassword page
-                    val intent = Intent(this, NewPassword::class.java)
-                    intent.putExtra("verificationCode", code)  // Pass the valid code to NewPassword activity
-                    startActivity(intent)
-                    finish()
-                } else {
-                    Toast.makeText(this, "Invalid verification code", Toast.LENGTH_SHORT).show()
-                }
-            }
     }
 }

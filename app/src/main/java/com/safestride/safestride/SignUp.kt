@@ -221,6 +221,7 @@ class SignUp : AppCompatActivity() {
         val confirmButton = dialogView.findViewById<Button>(R.id.confirmVerificationButton)
         val generateLinkButton = dialogView.findViewById<Button>(R.id.generateVerificationLinkButton)
         val timerTextView = dialogView.findViewById<TextView>(R.id.timerTextView)
+        val closeButton = dialogView.findViewById<ImageView>(R.id.closeDialogButton)  // The "X" button
 
         // Set up the timer (1 minute countdown)
         val timer = object : CountDownTimer(60000, 1000) {
@@ -237,6 +238,7 @@ class SignUp : AppCompatActivity() {
 
         timer.start()
 
+        // Button click listeners
         confirmButton.setOnClickListener {
             checkEmailVerificationStatus(dialog)
         }
@@ -246,8 +248,14 @@ class SignUp : AppCompatActivity() {
             sendVerificationEmailAgain()
         }
 
+        // Close button click listener (Dismiss the dialog)
+        closeButton.setOnClickListener {
+            dialog.dismiss()  // Dismiss the dialog when the "X" button is clicked
+        }
+
         dialog.show()
     }
+
 
     // Send the verification email again
     private fun sendVerificationEmailAgain() {

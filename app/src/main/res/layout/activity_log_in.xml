@@ -88,14 +88,12 @@
                     android:layout_width="20dp"
                     android:layout_height="24dp"
                     android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:layout_marginEnd="10dp"
-                android:src="@drawable/mail"
-                android:contentDescription="Email Icon"
-                android:layout_gravity="center_vertical"/>
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="10dp"
+                    android:src="@drawable/mail"
+                    android:contentDescription="Email Icon"
+                    android:layout_gravity="center_vertical"/>
             </RelativeLayout>
-
-
 
             <!-- Password Field with Eye Icon -->
             <RelativeLayout
@@ -158,8 +156,6 @@
                 android:textColor="@android:color/white"
                 android:padding="1dp" />
 
-
-
             <!-- "Don't have an account? Sign Up" -->
             <TextView
                 android:id="@+id/signUpLinkText"
@@ -174,6 +170,8 @@
                 android:focusable="true"
                 android:padding="10dp"
                 android:layout_gravity="center"/>
+
         </LinearLayout>
     </ScrollView>
+
 </RelativeLayout>

@@ -124,7 +124,7 @@ class Settings : AppCompatActivity() {
 
         // Reconnect Watch
         buttonReconnectWatch.setOnClickListener {
-            showReconnectDialog()
+            startActivity(Intent(this, Connect::class.java))
         }
 
         // Edit Profile
@@ -284,10 +284,6 @@ class Settings : AppCompatActivity() {
                 finish() // ✅ Close current activity after logout
             }
         }
-    }
-
-    private fun showReconnectDialog() {
-        // Show a reconnect dialog
     }
 
     fun onDeleteAccountClick(view: View) {

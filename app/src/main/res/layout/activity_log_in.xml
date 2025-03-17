@@ -171,7 +171,23 @@
                 android:padding="10dp"
                 android:layout_gravity="center"/>
 
+            <TextView
+                android:id="@+id/lockoutCountdownText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Locked out: 0 seconds remaining"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:layout_gravity="center"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="20dp"
+                android:visibility="gone" />
+
+
+
         </LinearLayout>
+
+
     </ScrollView>
 
 </RelativeLayout>

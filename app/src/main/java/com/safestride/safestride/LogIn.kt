@@ -1,31 +1,43 @@
 package com.safestride.safestride
 
+import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.text.InputType
-import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AlertDialog
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 
 class LogIn : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
     private var failedAttempts = 0
-    private var lockTime: Long = 0 // Variable to store the time when the account is locked
-    private val db = FirebaseFirestore.getInstance()
+    private var isLockedOut = false
+    private lateinit var lockoutTimer: CountDownTimer
+    private lateinit var lockoutCountdownText: TextView
+    private lateinit var sharedPreferences: SharedPreferences
+    private var lockoutEndTime: Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_log_in)
 
         auth = FirebaseAuth.getInstance()
+        sharedPreferences = getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
+        // Initialize lockoutCountdownText before checking lockout status.
+        lockoutCountdownText = findViewById(R.id.lockoutCountdownText)
+
+        // Check lockout status on app launch
+        checkLockoutStatus()
 
         val emailEditText: EditText = findViewById(R.id.emailField)
         val passwordEditText: EditText = findViewById(R.id.passwordField)
@@ -35,48 +47,44 @@ class LogIn : AppCompatActivity() {
         val eyeIconPassword: ImageView = findViewById(R.id.eyeIconPassword)
 
         logInButton.setOnClickListener {
-            val email = emailEditText.text.toString()
-            val password = passwordEditText.text.toString()
-
-            // Check if account is locked
-            if (System.currentTimeMillis() < lockTime) {
-                val remainingTime = (lockTime - System.currentTimeMillis()) / 1000
-                Toast.makeText(this, "Account locked. Try again in $remainingTime seconds.", Toast.LENGTH_LONG).show()
-                return@setOnClickListener
-            }
-
-            // Check if both email and password fields are not empty
-            if (email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Please fill in both email and password", Toast.LENGTH_SHORT).show()
+            if (isLockedOut) {
+                // Prevent login attempts during lockout
+                Toast.makeText(this, "Account is locked. Please wait.", Toast.LENGTH_SHORT).show()
             } else {
-                // Firebase Authentication login
-                auth.signInWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(this) { task ->
-                        if (task.isSuccessful) {
-                            val userId = auth.currentUser?.uid ?: return@addOnCompleteListener
-                            updateLoginAttempts(userId, true) // Successful login
+                val email = emailEditText.text.toString()
+                val password = passwordEditText.text.toString()
 
-                            val intent = Intent(this, Dashboard::class.java)
-                            startActivity(intent)
-                            finish()
-                        } else {
-                            failedAttempts++
-                            if (failedAttempts >= 3) {
-                                // Lock the account for 1 minute (60,000 milliseconds)
-                                lockTime = System.currentTimeMillis() + 60000
-                                showLockAccountDialog()
-
-                                val userId = auth.currentUser?.uid ?: return@addOnCompleteListener
-                                updateLoginAttempts(userId, false) // Failed login after lockout
+                if (email.isEmpty() || password.isEmpty()) {
+                    Toast.makeText(this, "Please fill in both email and password", Toast.LENGTH_SHORT).show()
+                } else {
+                    auth.signInWithEmailAndPassword(email, password)
+                        .addOnCompleteListener(this) { task ->
+                            if (task.isSuccessful) {
+                                // Reset failed attempts on successful login
+                                failedAttempts = 0
+                                sharedPreferences.edit().putInt("failedAttempts", failedAttempts).apply()
+                                val intent = Intent(this, Dashboard::class.java)
+                                startActivity(intent)
+                                finish()
                             } else {
-                                Toast.makeText(
-                                    this,
-                                    "Authentication Failed: ${task.exception?.message}",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                failedAttempts++
+                                sharedPreferences.edit().putInt("failedAttempts", failedAttempts).apply()
+                                // When reaching 3 failures, show warning dialog.
+                                if (failedAttempts == 3) {
+                                    showFailedLoginDialog()
+                                } else if (failedAttempts >= 4) {
+                                    // On the 4th failure, trigger lockout with countdown
+                                    triggerLockout()
+                                } else {
+                                    Toast.makeText(
+                                        this,
+                                        "Authentication Failed: ${task.exception?.message}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
                         }
-                    }
+                }
             }
         }
 
@@ -92,16 +100,17 @@ class LogIn : AppCompatActivity() {
 
         eyeIconPassword.setOnClickListener {
             if (passwordEditText.inputType == InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD) {
-                passwordEditText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_NORMAL
+                passwordEditText.inputType =
+                    InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_NORMAL
                 eyeIconPassword.setImageResource(R.drawable.openeye)
             } else {
-                passwordEditText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                passwordEditText.inputType =
+                    InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 eyeIconPassword.setImageResource(R.drawable.eyeclosed)
             }
             passwordEditText.setSelection(passwordEditText.text.length)
         }
 
-        // Back Arrow Click Listener
         findViewById<ImageView>(R.id.backArrowIcon).setOnClickListener {
             val intent = Intent(this, LandingPage::class.java)
             startActivity(intent)
@@ -109,67 +118,76 @@ class LogIn : AppCompatActivity() {
         }
     }
 
-    private fun showLockAccountDialog() {
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("Incorrect Credentials")
-            .setMessage("Please enter the correct credentials. Your account will be locked after another failed attempt.")
-            .setCancelable(false)
-            .setPositiveButton("Retry") { _, _ ->
-                // Reset failed attempts to allow retrying
-                failedAttempts = 0
-                // Reset the lock time to allow immediate retry
-                lockTime = System.currentTimeMillis() - 1
+    private fun checkLockoutStatus() {
+        lockoutEndTime = sharedPreferences.getLong("lockoutEndTime", 0)
+        val currentTime = System.currentTimeMillis()
 
-                // Proceed with login attempt after retry
-                val email = findViewById<EditText>(R.id.emailField).text.toString()
-                val password = findViewById<EditText>(R.id.passwordField).text.toString()
-
-                // Only retry login after resetting the lockTime
-                auth.signInWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(this) { task ->
-                        if (task.isSuccessful) {
-                            val userId = auth.currentUser?.uid ?: return@addOnCompleteListener
-                            updateLoginAttempts(userId, true)
-
-                            val intent = Intent(this, Dashboard::class.java)
-                            startActivity(intent)
-                            finish()
-                        } else {
-                            Toast.makeText(this, "Authentication Failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-            }
-            .setNegativeButton("Reset Password") { _, _ ->
-                val intent = Intent(this, ForgotPassword::class.java)
-                startActivity(intent)
-            }
-            .create()
-        dialog.show()
+        if (lockoutEndTime > currentTime) {
+            // If the lockout period is still active, show the remaining countdown.
+            isLockedOut = true
+            val remainingTime = lockoutEndTime - currentTime
+            triggerLockoutWithCountdown(remainingTime)
+        } else {
+            // Reset lockout status if time has passed.
+            isLockedOut = false
+            lockoutCountdownText.visibility = View.INVISIBLE
+        }
     }
 
-    private fun updateLoginAttempts(userId: String, isSuccess: Boolean) {
-        // Reference to Firestore collection for login attempts
-        val userDocRef = db.collection("loginAttempts").document(userId)
+    private fun triggerLockout() {
+        isLockedOut = true
+        val currentTime = System.currentTimeMillis()
+        lockoutEndTime = currentTime + 60000 // Lockout for 1 minute.
+        sharedPreferences.edit().putLong("lockoutEndTime", lockoutEndTime).apply()
 
-        // Get current document to check or create new document
-        userDocRef.get().addOnSuccessListener { document ->
-            if (document.exists()) {
-                // Update successful/failed login count based on the action
-                val currentSuccessCount = document.getLong("successfulLogins") ?: 0
-                val currentFailedCount = document.getLong("failedLogins") ?: 0
-                if (isSuccess) {
-                    userDocRef.update("successfulLogins", currentSuccessCount + 1)
-                } else {
-                    userDocRef.update("failedLogins", currentFailedCount + 1)
-                }
-            } else {
-                // If no document exists, create a new one with the appropriate values
-                if (isSuccess) {
-                    userDocRef.set(mapOf("successfulLogins" to 1, "failedLogins" to 0))
-                } else {
-                    userDocRef.set(mapOf("successfulLogins" to 0, "failedLogins" to 1))
-                }
+        // Start countdown immediately.
+        triggerLockoutWithCountdown(60000)
+    }
+
+    private fun triggerLockoutWithCountdown(remainingTime: Long) {
+        // Make the countdown text visible.
+        lockoutCountdownText.visibility = View.VISIBLE
+        lockoutCountdownText.text = "Locked out for 1 minute"
+
+        lockoutTimer = object : CountDownTimer(remainingTime, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                lockoutCountdownText.text = "Locked out: ${millisUntilFinished / 1000} seconds remaining"
             }
+
+            override fun onFinish() {
+                isLockedOut = false
+                failedAttempts = 0
+                sharedPreferences.edit().putInt("failedAttempts", failedAttempts).apply()
+                lockoutCountdownText.visibility = View.INVISIBLE
+                Toast.makeText(this@LogIn, "You can now try logging in again.", Toast.LENGTH_SHORT).show()
+            }
+        }.start()
+    }
+
+    private fun showFailedLoginDialog() {
+        // Inflate custom dialog view (warns user that the next failure will lock them out).
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_failed_login, null)
+        val retryButton = dialogView.findViewById<Button>(R.id.retryButton)
+        val forgotPasswordButton = dialogView.findViewById<Button>(R.id.forgotPasswordButton)
+
+        val builder = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+
+        val dialog = builder.create()
+
+        retryButton.setOnClickListener {
+            // Dismiss the dialog so user can try again.
+            // Do not reset failedAttempts – keep it at 3 so that if they fail again, lockout is triggered.
+            dialog.dismiss()
         }
+
+        forgotPasswordButton.setOnClickListener {
+            dialog.dismiss()
+            val intent = Intent(this, ForgotPassword::class.java)
+            startActivity(intent)
+        }
+
+        dialog.show()
     }
 }

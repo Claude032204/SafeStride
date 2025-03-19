@@ -152,7 +152,7 @@
                 android:layout_marginStart="95dp"
                 android:layout_marginEnd="95dp"
                 android:text="Log In"
-                android:background="@drawable/button_border"
+                android:background="@drawable/buttonborder"
                 android:textColor="@android:color/white"
                 android:padding="1dp" />
 

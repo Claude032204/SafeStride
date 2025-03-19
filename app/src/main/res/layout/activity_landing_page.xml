@@ -13,7 +13,7 @@
         android:layout_centerHorizontal="true"
         android:layout_alignParentTop="true"
         android:layout_marginTop="80dp"
-        android:src="@drawable/logooo"
+        android:src="@drawable/safelogo"
         android:contentDescription="@string/logo_desc" />
 
     <!-- Welcome text in the center -->
@@ -78,7 +78,7 @@
             android:textSize="15sp"
             android:textColor="#EDEFFF"
             android:textStyle="bold"
-            android:background="@drawable/button_border"
+            android:background="@drawable/buttonborder"
             android:padding="12dp"
             android:layout_marginTop="10dp"
             android:layout_marginStart="30dp"
